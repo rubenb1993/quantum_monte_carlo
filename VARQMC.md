@@ -14,9 +14,7 @@
 ...     for j in range(steps):
 ...         for i in range(len(x)):
 ...             x_old = x[i]
-...             E_old = alpha + x_old*x_old*(0.5 - 2*(alpha*alpha))
 ...             x_new = x_old + (random() - 0.5)*d
-...             E_new = alpha + x_new*x_new *(0.5 - 2*(alpha*alpha))
 ...             p = (exp(-alpha*x_new*x_new) / exp(-alpha*x_old*x_old))**2
 ...             if p > random():
 ...                 x[i] = x_new
@@ -54,11 +52,11 @@
 ... meanEn = np.mean(Energy[4000:,:])
 ... varE = np.var(Energy[4000:,:])
 ... print("alpha = ",alpha,", <E> = ", meanEn, "var(E) = ", varE)
-alpha =  0.4 , <E> =  0.510900453409 var(E) =  0.0263659449371
-alpha =  0.4 , <E> =  0.513247966289 var(E) =  0.0251702541311
-alpha =  0.4 , <E> =  0.50451251969 var(E) =  0.0206442379429
-alpha =  0.4 , <E> =  0.509817295917 var(E) =  0.0242520019181
-1 loop, best of 3: 2.6 s per loop
+alpha =  0.4 , <E> =  0.516502853374 var(E) =  0.0286056641436
+alpha =  0.4 , <E> =  0.50999093198 var(E) =  0.0234551133039
+alpha =  0.4 , <E> =  0.50448182353 var(E) =  0.021743970816
+alpha =  0.4 , <E> =  0.511107706828 var(E) =  0.0243275571996
+1 loop, best of 3: 2.56 s per loop
 ```
 
 ```python
@@ -67,6 +65,11 @@ alpha =  0.4 , <E> =  0.509817295917 var(E) =  0.0242520019181
 ... meanEn = np.mean(Energy[4000:,:])
 ... varE = np.var(Energy[4000:,:])
 ... print("alpha = ",alpha,", <E> = ", meanEn, "var(E) = ", varE)
+alpha =  0.4 , <E> =  0.514238784676 var(E) =  0.0258623796311
+alpha =  0.4 , <E> =  0.512987288177 var(E) =  0.0246134071106
+alpha =  0.4 , <E> =  0.509713052555 var(E) =  0.0237407845676
+alpha =  0.4 , <E> =  0.516960323286 var(E) =  0.0279417000937
+1 loop, best of 3: 1min 1s per loop
 ```
 
 ```python
