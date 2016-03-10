@@ -24,7 +24,7 @@
 ...                 x[i] = x_new
 ...             else:
 ...                 x[i] = x_old
-...             Energy[j,i] = El(alpha,x[i])
+...             Energy[j,i] = alpha + x[i]*x[i] *(0.5-2*(alpha*alpha))
 ...     return Energy
 ```
 
@@ -36,7 +36,7 @@
 ...
 >>> # Initiate random x vector
 ... x = np.random.uniform(-1,1,(N,1))
->>> size = x_old.shape
+>>> size = x.shape
 >>> Energy = np.zeros(shape=(steps,N))
 >>> meanEn = np.zeros(shape=(len(alpha),))
 >>> varE = np.zeros(shape=(len(alpha),))
@@ -48,10 +48,6 @@
 ...     meanEn[i] = np.mean(Energy[4000:,:])
 ...     varE[i] = np.var(Energy[4000:,:])
 ...     print("alpha = ",alpha[i],", <E> = ", meanEn[i], "var(E) = ", varE[i])
-alpha =  0.4 , <E> =  0.511009797484 var(E) =  0.0233548969609
-alpha =  0.45 , <E> =  0.499032466249 var(E) =  0.00491036499714
-alpha =  0.55 , <E> =  0.504446252185 var(E) =  0.00402241960338
-alpha =  0.6 , <E> =  0.507602720798 var(E) =  0.0165575456052
 ```
 
 ```python
