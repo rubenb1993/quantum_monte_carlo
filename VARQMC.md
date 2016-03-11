@@ -10,48 +10,66 @@
 
 ```python
 >>> @jit
-... def simulate_harmonic(alpha,steps,x):
+... def simulate_harmonic_numba(alpha,steps,x):
 ...     for j in range(steps):
 ...         for i in range(len(x)):
 ...             x_old = x[i]
-...             E_old = alpha + x_old*x_old *(0.5-2*(alpha*alpha))
 ...             x_new = x_old + (random() - 0.5)*d
-...             E_new = alpha + x_new*x_new *(0.5-2*(alpha*alpha))
 ...             p = (exp(-alpha*x_new*x_new) / exp(-alpha*x_old*x_old))**2
-...             if p >= 1:
-...                 x[i] = x_new
-...             elif p > random():
+...             if p > random():
 ...                 x[i] = x_new
 ...             else:
 ...                 x[i] = x_old
-...             Energy[j,i] = alpha + x[i]*x[i] *(0.5-2*(alpha*alpha))
+...             Energy[j,i] = alpha + x[i]*x[i] *(0.5 - 2*(alpha*alpha))
 ...     return Energy
 ```
 
 ```python
->>> alpha = [0.4,0.45,0.55,0.6]
->>> N = 400
->>> steps = 30000
->>> d = 0.05 #movement size
-...
->>> # Initiate random x vector
-... x = np.random.uniform(-1,1,(N,1))
->>> size = x.shape
->>> Energy = np.zeros(shape=(steps,N))
->>> meanEn = np.zeros(shape=(len(alpha),))
->>> varE = np.zeros(shape=(len(alpha),))
-...
->>> for i in range(len(alpha)):
-...     x = np.random.uniform(-1,1,(N,1))
-...     Energy = np.zeros(shape=(steps,N))
-...     Energy = simulate_harmonic(alpha[i],steps,x)
-...     meanEn[i] = np.mean(Energy[4000:,:])
-...     varE[i] = np.var(Energy[4000:,:])
-...     print("alpha = ",alpha[i],", <E> = ", meanEn[i], "var(E) = ", varE[i])
+>>> def simulate_harmonic(alpha,steps,x):
+...     for j in range(steps):
+...         x_new = x + (np.random.rand(len(x)) - 0.5)*d
+...         p = (np.exp(-alpha*x_new*x_new) / np.exp(-alpha*x*x))**2
+...         m = p > np.random.rand(len(x))
+...         x = x_new*m + x*~m
+...         Energy[j,:] = alpha + x*x *(0.5 - 2*(alpha*alpha))
+...     return Energy
 ```
 
 ```python
+>>> alpha = 0.4
+>>> N = 400 # 400
+>>> steps = 30000 # 30000
+>>> d = 0.05 #movement size
+...
+>>> # Initiate random x vector
+... x = np.random.uniform(-1,1,(N))
+>>> Energy = np.zeros(shape=(steps,N))
+```
 
+```python
+>>> %%timeit
+... Energy = simulate_harmonic(alpha,steps,x)
+... meanEn = np.mean(Energy[4000:,:])
+... varE = np.var(Energy[4000:,:])
+... print("alpha = ",alpha,", <E> = ", meanEn, "var(E) = ", varE)
+alpha =  0.4 , <E> =  0.516502853374 var(E) =  0.0286056641436
+alpha =  0.4 , <E> =  0.50999093198 var(E) =  0.0234551133039
+alpha =  0.4 , <E> =  0.50448182353 var(E) =  0.021743970816
+alpha =  0.4 , <E> =  0.511107706828 var(E) =  0.0243275571996
+1 loop, best of 3: 2.56 s per loop
+```
+
+```python
+>>> %%timeit
+... Energy = simulate_harmonic_numba(alpha,steps,x)
+... meanEn = np.mean(Energy[4000:,:])
+... varE = np.var(Energy[4000:,:])
+... print("alpha = ",alpha,", <E> = ", meanEn, "var(E) = ", varE)
+alpha =  0.4 , <E> =  0.514238784676 var(E) =  0.0258623796311
+alpha =  0.4 , <E> =  0.512987288177 var(E) =  0.0246134071106
+alpha =  0.4 , <E> =  0.509713052555 var(E) =  0.0237407845676
+alpha =  0.4 , <E> =  0.516960323286 var(E) =  0.0279417000937
+1 loop, best of 3: 1min 1s per loop
 ```
 
 ```python
