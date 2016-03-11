@@ -27,8 +27,7 @@
 ```
 
 ```python
->>> def simulate_helium_vector(alpha,steps,X):
-...     shape = X.shape
+>>> def simulate_helium_vector(alpha,steps,X,d):
 ...     for j in range(steps):
 ...         X_new = X + (np.random.rand(2*N,3) - 0.5) * d
 ...         r_old = np.linalg.norm(X,axis=1)
@@ -58,45 +57,6 @@
 ...         dot_product = np.sum(r1r2_diff_hat * r1r2_diff,axis=1)
 ...
 ...         Energy[j,:] = -4 + dot_product/(r12*psi_fact**2) - 1/(r12*psi_fact**3) - 1/(4*psi_fact**4) + 1/r12
-...     return Energy
-```
-
-```python
->>> def simulate_helium(alpha,steps,X):
-...     for j in range(steps):
-...         for i in range(N):
-...             x_old = X[i,:]
-...             x_new = x_old + (np.random.uniform(0,1,(1,6)) - 0.5) * d
-...
-...             r1_old = np.linalg.norm(x_old[0:3])
-...             r2_old = np.linalg.norm(x_old[3:])
-...
-...             r1_new = np.linalg.norm(x_new[0:3])
-...             r2_new = np.linalg.norm(x_new[3:])
-...
-...             r12_old = x_old[0:3] - x_old[3:]
-...             r12_old_abs = np.linalg.norm(r12_old)
-...             r12_old_hat = r12_old/r12_old_abs
-...
-...             r12_new = x_new[:,0:3] - x_new[:,3:]
-...             r12_new_abs = np.linalg.norm(r12_new)
-...             r12_new_hat = r12_new[0,:]/r12_new_abs
-...
-...             psi_fact_old = 1 + alpha*r12_old_abs
-...             psi_fact_new = 1 + alpha*r12_new_abs
-...
-...             psi_old = exp(-2*r1_old)*exp(-2*r2_old) * exp(r12_old_abs/(2*psi_fact_old))
-...             psi_new = exp(-2*r1_new)*exp(-2*r2_new) * exp(r12_new_abs/(2*psi_fact_new))
-...             p = (psi_new/psi_old)**2
-...             if p > random():
-...                 X[i,:] = x_new
-...                 dot_new = np.dot(r12_new_hat,r12_new[0,:])
-...                 Energy[j,i] = -4 + dot_new/(r12_new_abs * psi_fact_new ** 2) - \
-...                                     1/(r12_new_abs * (psi_fact_new**3)) - 1/(4*(psi_fact_new**4)) + 1/r12_new_abs
-...             else:
-...                 X[i,:] = x_old
-...                 Energy[j,i] = -4 + np.dot(r12_old_hat,r12_old)/(r12_old_abs * psi_fact_old ** 2) - \
-...                                     1/(r12_old_abs * psi_fact_old**3) - 1/(4*psi_fact_old**4) + 1/r12_old_abs
 ...     return Energy
 ```
 
@@ -134,7 +94,7 @@ alpha =  0.6 , <E> =  0.509519918784 var(E) =  0.0165193730982
 >>> alpha = [0.05,0.075,0.10,0.125,0.15,0.175,0.20,0.25]
 >>> N = 400
 >>> steps = 30000
->>> d = 1.5
+>>> d = 0.1
 ...
 >>> meanEn = np.zeros(shape=(len(alpha),))
 >>> varE = np.zeros(shape=(len(alpha),))
@@ -142,25 +102,50 @@ alpha =  0.6 , <E> =  0.509519918784 var(E) =  0.0165193730982
 ...
 ...
 >>> for i in range(len(alpha)):
-...     X = np.random.uniform(-10,10,(2*N,3))
+...     X = np.random.uniform(-2,2,(2*N,3))
 ...     Energy = np.zeros(shape=(steps,N))
-...     Energy = simulate_helium_vector(alpha[i],steps,X)
+...     Energy = simulate_helium_vector(alpha[i],steps,X,d)
 ...     meanEn[i] = np.mean(Energy[4000:,:])
 ...     varE[i] = np.var(Energy[4000:,:])
 ...
 ...     print("alpha = ",alpha[i],", <E> = ", meanEn[i], "var(E) = ", varE[i])
-alpha =  0.05 , <E> =  -2.99548597678 var(E) =  0.189113512296
-alpha =  0.075 , <E> =  -2.97676399691 var(E) =  0.168381189406
-alpha =  0.1 , <E> =  -2.95823907086 var(E) =  0.151126750389
-alpha =  0.125 , <E> =  -2.94095237902 var(E) =  0.136653830221
-alpha =  0.15 , <E> =  -2.92592585629 var(E) =  0.125050566022
-alpha =  0.175 , <E> =  -2.91114252923 var(E) =  0.115004291746
-alpha =  0.2 , <E> =  -2.90007251029 var(E) =  0.106951557626
-alpha =  0.25 , <E> =  -2.87860371232 var(E) =  0.095512205894
+alpha =  0.05 , <E> =  -2.95582628014 var(E) =  0.207785810266
+alpha =  0.075 , <E> =  -2.93989373777 var(E) =  0.185647000139
+alpha =  0.1 , <E> =  -2.92064900387 var(E) =  0.164257312061
+alpha =  0.125 , <E> =  -2.90799771499 var(E) =  0.147108641076
+alpha =  0.15 , <E> =  -2.89645676641 var(E) =  0.132488593439
+alpha =  0.175 , <E> =  -2.87655158483 var(E) =  0.120535258304
+alpha =  0.2 , <E> =  -2.87900677432 var(E) =  0.112562473784
+alpha =  0.25 , <E> =  -2.85468275414 var(E) =  0.0982666266554
 ```
 
 ```python
-
+>>> alpha = [0.05, 0.075, 0.1, 0.125, 0.15, 0.175, 0.2, 0.25]
+>>> N = 400
+>>> steps = 30000
+>>> d = [0.0015, 0.0015, 0.02, 0.0225, 0.1, 0.25, 0.25, 1]
+>>> Xrange = [0.5, 0.5, 0.5, 0.5, 1, 2, 2, 2]
+>>> meanEn = np.zeros(shape=(len(alpha),))
+>>> varE = np.zeros(shape=(len(alpha),))
+...
+...
+...
+>>> for i in range(len(alpha)):
+...     X = np.random.uniform(-Xrange[i],Xrange[i],(2*N,3))
+...     Energy = np.zeros(shape=(steps,N))
+...     Energy = simulate_helium_vector(alpha[i],steps,X,d[i])
+...     meanEn[i] = np.mean(Energy[4000:,:])
+...     varE[i] = np.var(Energy[4000:,:])
+...
+...     print("alpha = ",alpha[i],", <E> = ", meanEn[i], "var(E) = ", varE[i])
+alpha =  0.05 , <E> =  -2.88997112872 var(E) =  0.210815553792
+alpha =  0.075 , <E> =  -2.82326916111 var(E) =  0.196702986772
+alpha =  0.1 , <E> =  -2.89993455158 var(E) =  0.170302647473
+alpha =  0.125 , <E> =  -2.88390332118 var(E) =  0.153968252603
+alpha =  0.15 , <E> =  -2.89606679395 var(E) =  0.13264112315
+alpha =  0.175 , <E> =  -2.88749565412 var(E) =  0.12007785539
+alpha =  0.2 , <E> =  -2.87776358888 var(E) =  0.111634887843
+alpha =  0.25 , <E> =  -2.87231251516 var(E) =  0.0968084109469
 ```
 
 ```python
