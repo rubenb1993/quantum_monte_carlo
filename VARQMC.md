@@ -31,12 +31,13 @@
 ...         p = (np.exp(-alpha*x_new*x_new) / np.exp(-alpha*x*x))**2
 ...         m = p > np.random.rand(len(x))
 ...         x = x_new*m + x*~m
-...         Energy[j,:] = alpha + x*x *(0.5 - 2*(alpha*alpha))
+...         #Energy[j,:] = alpha + x*x *(0.5 - 2*(alpha*alpha))#harmonic oscillator
+...         Energy[j,:] = -1/x -alpha/2*(alpha - 2/x)#harmonic oscillator
 ...     return Energy
 ```
 
 ```python
->>> alpha = 0.4
+>>> alpha = 0.8
 >>> N = 400 # 400
 >>> steps = 30000 # 30000
 >>> d = 0.05 #movement size
@@ -52,11 +53,11 @@
 ... meanEn = np.mean(Energy[4000:,:])
 ... varE = np.var(Energy[4000:,:])
 ... print("alpha = ",alpha,", <E> = ", meanEn, "var(E) = ", varE)
-alpha =  0.4 , <E> =  0.516502853374 var(E) =  0.0286056641436
-alpha =  0.4 , <E> =  0.50999093198 var(E) =  0.0234551133039
-alpha =  0.4 , <E> =  0.50448182353 var(E) =  0.021743970816
-alpha =  0.4 , <E> =  0.511107706828 var(E) =  0.0243275571996
-1 loop, best of 3: 2.56 s per loop
+alpha =  0.8 , <E> =  5.41990592754 var(E) =  253329534.611
+alpha =  0.8 , <E> =  0.724882826951 var(E) =  11940888.9738
+alpha =  0.8 , <E> =  0.686928729276 var(E) =  3877241.15404
+alpha =  0.8 , <E> =  -10.9155286413 var(E) =  1086063933.53
+1 loop, best of 3: 2.73 s per loop
 ```
 
 ```python
