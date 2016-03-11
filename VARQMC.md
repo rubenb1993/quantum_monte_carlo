@@ -1,28 +1,18 @@
 ```python
 >>> import matplotlib.pyplot as plt
 >>> import numpy as np
->>> from random import random
->>> from math import exp
->>> from numba import jit
 ...
 >>> %matplotlib inline
 ```
 
 ```python
->>> @jit
-... def simulate_harmonic(alpha,steps,x):
+>>> def simulate_harmonic(alpha,steps,x):
 ...     for j in range(steps):
-...         for i in range(len(x)):
-...             x_old = x[i]
-...             x_new = x_old + (random() - 0.5)*d
-...             p = (exp(-alpha*x_new*x_new) / exp(-alpha*x_old*x_old))**2
-...             if p >= 1:
-...                 x[i] = x_new
-...             elif p > random():
-...                 x[i] = x_new
-...             else:
-...                 x[i] = x_old
-...             Energy[j,i] = alpha + x[i]*x[i] *(0.5-2*(alpha*alpha))
+...         x_new = x + (np.random.rand(len(x)) - 0.5)*d
+...         p = (np.exp(-alpha*x_new*x_new) / np.exp(-alpha*x*x))**2
+...         m = p > np.random.rand(len(x))
+...         x = x_new*m + x*~m
+...         Energy[j,:] = alpha + x*x *(0.5 - 2*(alpha*alpha))
 ...     return Energy
 ```
 
@@ -60,20 +50,27 @@
 ...     return Energy
 ```
 
+```python
+>>> def simulate_hydrogen_atom(alpha,steps,x):
+...     for j in range(steps):
+...         x_new = x + (np.random.random_sample(np.shape(x)) - 0.5)*d
+...         p = (np.exp(-alpha*np.linalg.norm(x_new, axis=1)) / np.exp(-alpha*np.linalg.norm(x, axis=1)))**2
+...         m = (p > np.random.rand(N)).reshape(-1,1)
+...         x = x_new*m + x*~m
+...         Energy[j,:] = -1/np.linalg.norm(x, axis=1) -alpha/2*(alpha - 2/np.linalg.norm(x, axis=1))
+...     return Energy
+```
+
 ## 1D harmonic oscilator
 
 ```python
->>> alpha = [0.4,0.45,0.55,0.6]
->>> N = 4
+>>> #%%timeit
+... alpha = [0.4,0.45,0.5,0.55,0.6]
+>>> N = 400
 >>> steps = 30000
->>> d = 0.5 #movement size
-...
->>> # Initiate random x vector
-... x = np.random.uniform(-1,1,(N))
->>> Energy = np.zeros(shape=(steps,N))
+>>> d = 0.05 #movement size
 >>> meanEn = np.zeros(shape=(len(alpha),))
 >>> varE = np.zeros(shape=(len(alpha),))
->>> n = np.zeros(shape = (len(alpha),))
 ...
 >>> for i in range(len(alpha)):
 ...     x = np.random.uniform(-1,1,(N))
@@ -82,10 +79,36 @@
 ...     meanEn[i] = np.mean(Energy[4000:,:])
 ...     varE[i] = np.var(Energy[4000:,:])
 ...     print("alpha = ",alpha[i],", <E> = ", meanEn[i], "var(E) = ", varE[i])
-alpha =  0.4 , <E> =  0.513156140604 var(E) =  0.0248828562207
-alpha =  0.45 , <E> =  0.502200683745 var(E) =  0.00535360079856
-alpha =  0.55 , <E> =  0.504218832321 var(E) =  0.00420340150802
-alpha =  0.6 , <E> =  0.509519918784 var(E) =  0.0165193730982
+alpha =  0.4 , <E> =  0.506460538552 var(E) =  0.022707115056
+alpha =  0.45 , <E> =  0.500555176808 var(E) =  0.0050657545702
+alpha =  0.5 , <E> =  0.5 var(E) =  0.0
+alpha =  0.55 , <E> =  0.502103176214 var(E) =  0.00465720593767
+alpha =  0.6 , <E> =  0.510190280355 var(E) =  0.0164588352981
+```
+
+## Hydrogen Atom
+
+```python
+>>> #%%timeit
+... alpha = [0.8,0.9,1,1.1,1.2]
+>>> N = 400
+>>> steps = 30000
+>>> d = 0.05 #movement size
+>>> meanEn = np.zeros(shape=(len(alpha),))
+>>> varE = np.zeros(shape=(len(alpha),))
+...
+>>> for i in range(len(alpha)):
+...     x = np.random.uniform(-1,1,(N,3))
+...     Energy = np.zeros(shape=(steps,N))
+...     Energy = simulate_hydrogen_atom(alpha[i],steps,x)
+...     meanEn[i] = np.mean(Energy[4000:,:])
+...     varE[i] = np.var(Energy[4000:,:])
+...     print("alpha = ",alpha[i],", <E> = ", meanEn[i], "var(E) = ", varE[i])
+alpha =  0.8 , <E> =  -0.500951463889 var(E) =  0.0301581243297
+alpha =  0.9 , <E> =  -0.503837775564 var(E) =  0.00946968379623
+alpha =  1 , <E> =  -0.5 var(E) =  0.0
+alpha =  1.1 , <E> =  -0.491888181923 var(E) =  0.0127833303647
+alpha =  1.2 , <E> =  -0.467792154199 var(E) =  0.0602454548027
 ```
 
 ## Helium Atom
@@ -109,14 +132,14 @@ alpha =  0.6 , <E> =  0.509519918784 var(E) =  0.0165193730982
 ...     varE[i] = np.var(Energy[4000:,:])
 ...
 ...     print("alpha = ",alpha[i],", <E> = ", meanEn[i], "var(E) = ", varE[i])
-alpha =  0.05 , <E> =  -2.95582628014 var(E) =  0.207785810266
-alpha =  0.075 , <E> =  -2.93989373777 var(E) =  0.185647000139
-alpha =  0.1 , <E> =  -2.92064900387 var(E) =  0.164257312061
-alpha =  0.125 , <E> =  -2.90799771499 var(E) =  0.147108641076
-alpha =  0.15 , <E> =  -2.89645676641 var(E) =  0.132488593439
-alpha =  0.175 , <E> =  -2.87655158483 var(E) =  0.120535258304
-alpha =  0.2 , <E> =  -2.87900677432 var(E) =  0.112562473784
-alpha =  0.25 , <E> =  -2.85468275414 var(E) =  0.0982666266554
+alpha =  0.05 , <E> =  -2.95232385864 var(E) =  0.208017640869
+alpha =  0.075 , <E> =  -2.94151484022 var(E) =  0.183915577893
+alpha =  0.1 , <E> =  -2.9260539173 var(E) =  0.164984569561
+alpha =  0.125 , <E> =  -2.90774480284 var(E) =  0.147805417769
+alpha =  0.15 , <E> =  -2.89417130552 var(E) =  0.133078844921
+alpha =  0.175 , <E> =  -2.88272199571 var(E) =  0.120518915052
+alpha =  0.2 , <E> =  -2.87544795127 var(E) =  0.112528599967
+alpha =  0.25 , <E> =  -2.85985545676 var(E) =  0.0986507347475
 ```
 
 ```python
@@ -138,14 +161,14 @@ alpha =  0.25 , <E> =  -2.85468275414 var(E) =  0.0982666266554
 ...     varE[i] = np.var(Energy[4000:,:])
 ...
 ...     print("alpha = ",alpha[i],", <E> = ", meanEn[i], "var(E) = ", varE[i])
-alpha =  0.05 , <E> =  -2.88997112872 var(E) =  0.210815553792
-alpha =  0.075 , <E> =  -2.82326916111 var(E) =  0.196702986772
-alpha =  0.1 , <E> =  -2.89993455158 var(E) =  0.170302647473
-alpha =  0.125 , <E> =  -2.88390332118 var(E) =  0.153968252603
-alpha =  0.15 , <E> =  -2.89606679395 var(E) =  0.13264112315
-alpha =  0.175 , <E> =  -2.88749565412 var(E) =  0.12007785539
-alpha =  0.2 , <E> =  -2.87776358888 var(E) =  0.111634887843
-alpha =  0.25 , <E> =  -2.87231251516 var(E) =  0.0968084109469
+alpha =  0.05 , <E> =  -2.90431953315 var(E) =  0.217867226938
+alpha =  0.075 , <E> =  -2.8705912082 var(E) =  0.187755874208
+alpha =  0.1 , <E> =  -2.90583105399 var(E) =  0.17355659988
+alpha =  0.125 , <E> =  -2.87084527599 var(E) =  0.151615907644
+alpha =  0.15 , <E> =  -2.89473207706 var(E) =  0.132211286959
+alpha =  0.175 , <E> =  -2.88673662107 var(E) =  0.12001119664
+alpha =  0.2 , <E> =  -2.8766466008 var(E) =  0.110835168778
+alpha =  0.25 , <E> =  -2.87172814924 var(E) =  0.0967602312541
 ```
 
 ```python
