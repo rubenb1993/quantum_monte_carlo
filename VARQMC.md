@@ -7,17 +7,25 @@
 
 ```python
 >>> def simulate_harmonic(alpha,steps,x):
+...     "A variational monte carlo method for a harmonic oscilator"
 ...     for j in range(steps):
 ...         x_new = x + (np.random.rand(len(x)) - 0.5)*d
 ...         p = (np.exp(-alpha*x_new*x_new) / np.exp(-alpha*x*x))**2
-...         m = p > np.random.rand(len(x))
-...         x = x_new*m + x*~m
+...         m = p > np.random.rand(len(x)) #Vector with acceptences
+...         x = x_new*m + x*~m #new positions
 ...         Energy[j,:] = alpha + x*x *(0.5 - 2*(alpha*alpha))
 ...     return Energy
 ```
 
 ```python
->>> def simulate_helium_vector(alpha,steps,X,d):
+>>> def simulate_helium_vector(alpha,steps,X):
+...     """A variational Monte Carlo simulation for a helium atom.
+...     Based on theory of ``Computational Physics'' by J.M. Thijssen, chapter 12.2 (2nd edition)
+...     X is an (2N,3) matrix with particle pairs (x,y,z) position. Particles are paired with i and N+i
+...     alpha is the trial variable for the trial wave function of the form exp(-alpha * r)
+...     steps is the amount of steps taken by the walkers
+...     Energy (steps, N) is the energy of each particle pair at timestep j
+...     """
 ...     for j in range(steps):
 ...         X_new = X + (np.random.rand(2*N,3) - 0.5) * d
 ...         r_old = np.linalg.norm(X,axis=1)
@@ -32,19 +40,24 @@
 ...         psi_new= np.exp(-2*r_new[0:N] - 2*r_new[N:]) * np.exp(r12_new/(2*psi_fact_new))
 ...
 ...         p = (psi_new/psi_old)**2
-...         m = p>np.random.rand(N)
+...         m = p>np.random.rand(N) #Vector with acceptance of new position {size= (200,1)}
 ...         m = np.transpose(np.tile(m,(3,2))) #make from m a 400,3 matrix by repeating m
 ...         X = X_new*(m) + X*~(m)
 ...
+...         #Make normalization vector of (200,3) to normalize each particle pair
+...         r1_length = np.transpose(np.tile(np.linalg.norm(X[0:N,:],axis=1),(3,1)))
+...         r2_length = np.transpose(np.tile(np.linalg.norm(X[N:,:],axis=1),(3,1)))
+...
+...         #Vectors for energy calculation
 ...         r1r2_diff = X[0:N,:] - X[N:,:]
-...         r1_length = np.transpose(np.tile(np.linalg.norm(X[0:N,:],axis=1),(3,1))) #200,3 length vector to normalize r1
-...         r2_length = np.transpose(np.tile(np.linalg.norm(X[N:,:],axis=1),(3,1))) #200,3 length vecotr to normalize r2
 ...         r1r2_diff_hat = X[0:N,:]/r1_length - X[N:,:]/r2_length
 ...
+...         #recurring factors in energy calculation
 ...         r12 = np.linalg.norm(X[0:N,:] - X[N:,:],axis=1)
 ...         psi_fact = 1 + alpha*r12
 ...
-...         dot_product = np.sum(r1r2_diff_hat * r1r2_diff,axis=1)
+...         #dot product (r1_hat - r2_hat) * (r1 - r2)
+...         dot_product = np.sum(r1r2_diff_hat * r1r2_diff, axis=1)
 ...
 ...         Energy[j,:] = -4 + dot_product/(r12*psi_fact**2) - 1/(r12*psi_fact**3) - 1/(4*psi_fact**4) + 1/r12
 ...     return Energy
@@ -52,10 +65,11 @@
 
 ```python
 >>> def simulate_hydrogen_atom(alpha,steps,x):
+...     "a variational monte carlo method for the hydrogen atom"
 ...     for j in range(steps):
 ...         x_new = x + (np.random.random_sample(np.shape(x)) - 0.5)*d
 ...         p = (np.exp(-alpha*np.linalg.norm(x_new, axis=1)) / np.exp(-alpha*np.linalg.norm(x, axis=1)))**2
-...         m = (p > np.random.rand(N)).reshape(-1,1)
+...         m = (p > np.random.rand(N)).reshape(-1,1) #acceptance vector
 ...         x = x_new*m + x*~m
 ...         Energy[j,:] = -1/np.linalg.norm(x, axis=1) -alpha/2*(alpha - 2/np.linalg.norm(x, axis=1))
 ...     return Energy
@@ -127,19 +141,19 @@ alpha =  1.2 , <E> =  -0.467792154199 var(E) =  0.0602454548027
 >>> for i in range(len(alpha)):
 ...     X = np.random.uniform(-2,2,(2*N,3))
 ...     Energy = np.zeros(shape=(steps,N))
-...     Energy = simulate_helium_vector(alpha[i],steps,X,d)
+...     Energy = simulate_helium_vector(alpha[i],steps,X)
 ...     meanEn[i] = np.mean(Energy[4000:,:])
 ...     varE[i] = np.var(Energy[4000:,:])
 ...
 ...     print("alpha = ",alpha[i],", <E> = ", meanEn[i], "var(E) = ", varE[i])
-alpha =  0.05 , <E> =  -2.87061628463 var(E) =  0.175217486358
-alpha =  0.075 , <E> =  -2.87618637107 var(E) =  0.153836920106
-alpha =  0.1 , <E> =  -2.87821278424 var(E) =  0.13619809781
-alpha =  0.125 , <E> =  -2.87905988678 var(E) =  0.122925304434
-alpha =  0.15 , <E> =  -2.87820442748 var(E) =  0.111534430571
-alpha =  0.175 , <E> =  -2.87605583605 var(E) =  0.103171651965
-alpha =  0.2 , <E> =  -2.87737875063 var(E) =  0.096748373754
-alpha =  0.25 , <E> =  -2.8727049448 var(E) =  0.0882921842801
+alpha =  0.05 , <E> =  -2.87115747721 var(E) =  0.175024515771
+alpha =  0.075 , <E> =  -2.87671725997 var(E) =  0.153744624121
+alpha =  0.1 , <E> =  -2.87637077663 var(E) =  0.136753147217
+alpha =  0.125 , <E> =  -2.87629164014 var(E) =  0.122201267971
+alpha =  0.15 , <E> =  -2.8785236435 var(E) =  0.111547873615
+alpha =  0.175 , <E> =  -2.87847111638 var(E) =  0.103380955243
+alpha =  0.2 , <E> =  -2.87653363486 var(E) =  0.0969477551553
+alpha =  0.25 , <E> =  -2.87391030154 var(E) =  0.0887472087972
 ```
 
 ```python
