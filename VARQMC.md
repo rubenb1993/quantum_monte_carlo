@@ -33,33 +33,33 @@
 ...         r12_old = np.linalg.norm(X[0:N,:] - X[N:,:],axis=1)
 ...         r12_new = np.linalg.norm(X_new[0:N,:] - X_new[N:,:],axis=1)
 ...
-...         psi_fact_old = 1 + alpha * r12_old
-...         psi_fact_new = 1 + alpha * r12_new
+...         psi_fact_old = 1 + alpha*r12_old
+...         psi_fact_new = 1 + alpha*r12_new
 ...
 ...         psi_old = np.exp(-2*r_old[0:N] - 2*r_old[N:]) * np.exp(r12_old/(2*psi_fact_old))
 ...         psi_new= np.exp(-2*r_new[0:N] - 2*r_new[N:]) * np.exp(r12_new/(2*psi_fact_new))
 ...
-...         p = (psi_new/psi_old)**2
-...         m = p>np.random.rand(N) #Vector with acceptance of new position {size= (200,1)}
+...         p = (psi_new/psi_old) ** 2
+...         m = p > np.random.rand(N) #Vector with acceptance of new position {size= (200,1)}
 ...         m = np.transpose(np.tile(m,(3,2))) #make from m a 400,3 matrix by repeating m
 ...         X = X_new*(m) + X*~(m)
 ...
 ...         #Make normalization vector of (200,3) to normalize each particle pair
-...         r1_length = np.transpose(np.tile(np.linalg.norm(X[0:N,:],axis=1),(3,1)))
-...         r2_length = np.transpose(np.tile(np.linalg.norm(X[N:,:],axis=1),(3,1)))
+...         r1_length = np.transpose(np.tile(np.linalg.norm(X[0:N,:], axis=1), (3,1)))
+...         r2_length = np.transpose(np.tile(np.linalg.norm(X[N:,:], axis=1), (3,1)))
 ...
 ...         #Vectors for energy calculation
 ...         r1r2_diff = X[0:N,:] - X[N:,:]
 ...         r1r2_diff_hat = X[0:N,:]/r1_length - X[N:,:]/r2_length
 ...
 ...         #recurring factors in energy calculation
-...         r12 = np.linalg.norm(X[0:N,:] - X[N:,:],axis=1)
+...         r12 = np.linalg.norm(X[0:N,:] - X[N:,:], axis=1)
 ...         psi_fact = 1 + alpha*r12
 ...
 ...         #dot product (r1_hat - r2_hat) * (r1 - r2)
-...         dot_product = np.sum(r1r2_diff_hat * r1r2_diff, axis=1)
+...         dot_product = np.sum(r1r2_diff_hat*r1r2_diff, axis=1)
 ...
-...         Energy[j,:] = -4 + dot_product/(r12*psi_fact**2) - 1/(r12*psi_fact**3) - 1/(4*psi_fact**4) + 1/r12
+...         Energy[j,:] = -4 + dot_product / (r12*psi_fact**2) - 1 / (r12*psi_fact**3) - 1 / (4*psi_fact**4) + 1 / r12
 ...     return Energy
 ```
 
@@ -68,10 +68,10 @@
 ...     "a variational monte carlo method for the hydrogen atom"
 ...     for j in range(steps):
 ...         x_new = x + (np.random.random_sample(np.shape(x)) - 0.5)*d
-...         p = (np.exp(-alpha*np.linalg.norm(x_new, axis=1)) / np.exp(-alpha*np.linalg.norm(x, axis=1)))**2
+...         p = (np.exp(-alpha*np.linalg.norm(x_new, axis=1)) / np.exp(-alpha*np.linalg.norm(x, axis=1))) ** 2
 ...         m = (p > np.random.rand(N)).reshape(-1,1) #acceptance vector
 ...         x = x_new*m + x*~m
-...         Energy[j,:] = -1/np.linalg.norm(x, axis=1) -alpha/2*(alpha - 2/np.linalg.norm(x, axis=1))
+...         Energy[j,:] = -1/np.linalg.norm(x, axis=1) - alpha/2*(alpha - 2/np.linalg.norm(x, axis=1))
 ...     return Energy
 ```
 
