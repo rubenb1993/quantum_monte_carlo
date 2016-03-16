@@ -161,47 +161,28 @@ alpha =  0.25 , <E> =  -2.87391030154 var(E) =  0.0887472087972
 
 ```python
 >>> def simulate_hydrogen_molecule(s,a,beta,steps,X):
-...     """A variational Monte Carlo simulation for a helium atom.
-...     Based on theory of ``Computational Physics'' by J.M. Thijssen, chapter 12.2 (2nd edition)
-...     X is an (2N,3) matrix with particle pairs (x,y,z) position. Particles are paired with i and N+i
-...     alpha is the trial variable for the trial wave function of the form exp(-alpha * r)
-...     steps is the amount of steps taken by the walkers
-...     Energy (steps, N) is the energy of each particle pair at timestep j
+...     """Variational Quantum mechanics procedure for calculating the expected energy from parameters s and beta
+...     Using the Coulomb cusp condition, and the method described in chapter 12.2 from Computational Physics by J.M. Thijssen
+...     steps: integer amount of steps the walkers walk
+...     X: (2*N,3) matrix of (x,y,z) position of all walker pairs (pairs: i and N+i) with N amount of walkers
 ...     """
-...     for j in range(steps):
-...         X_new = X + (np.random.rand(2*N,3) - 0.5) * d
-...         r_old = np.linalg.norm(X,axis=1)
-...         r_new = np.linalg.norm(X_new,axis=1)
-...         r12_old = np.linalg.norm(X[0:N,:] - X[N:,:],axis=1)
-...         r12_new = np.linalg.norm(X_new[0:N,:] - X_new[N:,:],axis=1)
-...
-...         psi_fact_old = 1 + alpha*r12_old
-...         psi_fact_new = 1 + alpha*r12_new
-...
-...         psi_old = np.exp(-2*r_old[0:N] - 2*r_old[N:]) * np.exp(r12_old/(2*psi_fact_old))
-...         psi_new= np.exp(-2*r_new[0:N] - 2*r_new[N:]) * np.exp(r12_new/(2*psi_fact_new))
-...
-...         p = (psi_new/psi_old) ** 2
-...         m = p > np.random.rand(N) #Vector with acceptance of new position {size= (200,1)}
-...         m = np.transpose(np.tile(m,(3,2))) #make from m a 400,3 matrix by repeating m
-...         X = X_new*(m) + X*~(m)
-...
-...         #Make normalization vector of (200,3) to normalize each particle pair
-...         r1_length = np.transpose(np.tile(np.linalg.norm(X[0:N,:], axis=1), (3,1)))
-...         r2_length = np.transpose(np.tile(np.linalg.norm(X[N:,:], axis=1), (3,1)))
-...
-...         #Vectors for energy calculation
-...         r1r2_diff = X[0:N,:] - X[N:,:]
-...         r1r2_diff_hat = X[0:N,:]/r1_length - X[N:,:]/r2_length
-...
-...         #recurring factors in energy calculation
-...         r12 = np.linalg.norm(X[0:N,:] - X[N:,:], axis=1)
-...         psi_fact = 1 + alpha*r12
-...
-...         #dot product (r1_hat - r2_hat) * (r1 - r2)
-...         dot_product = np.sum(r1r2_diff_hat*r1r2_diff, axis=1)
-...
-...         Energy[j,:] = -4 + dot_product / (r12*psi_fact**2) - 1 / (r12*psi_fact**3) - 1 / (4*psi_fact**4) + 1 / r12
+...     a
+...     phi_1
+...     phi_1L
+...     phi_1R
+...     phi_2
+...     phi_2L
+...     phi_2R
+...     r_12
+...     r_1L
+...     r_1R
+...     r_2L
+...     r_2R
+...     r_1L_hat
+...     r_1R_hat
+...     r_2L_hat
+...     r_2R_hat
+...     r_12_hat
 ...     return Energy
 ```
 
