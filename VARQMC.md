@@ -143,7 +143,63 @@ alpha =  0.25 , <E> =  -2.8727049448 var(E) =  0.0882921842801
 ```
 
 ```python
+>>> ## Alpha minimizer
+```
 
+```python
+>>> def simulate_harmonic_min(alpha,steps,x):
+...     for j in range(steps):
+...         x_new = x + (np.random.rand(len(x)) - 0.5)*d
+...         p = (np.exp(-alpha*x_new*x_new) / np.exp(-alpha*x*x))**2
+...         m = p > np.random.rand(len(x))
+...         x = x_new*m + x*~m
+...         Energy[j,:] = alpha + x*x *(0.5 - 2*(alpha*alpha))
+...         lnpsi[j,:] = -x*x
+...     return Energy, lnpsi
+```
+
+```python
+>>> #%%timeit
+... numbalpha = 10
+>>> alpha = np.zeros(shape=(numbalpha+1,))
+>>> alpha[0] = 1.2
+>>> gamma = 1
+>>> N = 400
+>>> steps = 30000
+>>> d = 0.05 #movement size
+>>> meanEn = np.zeros(shape=(numbalpha,))
+>>> varE = np.zeros(shape=(numbalpha,))
+...
+>>> for i in range(numbalpha):
+...     x = np.random.uniform(-1,1,(N))
+...     Energy = np.zeros(shape=(steps,N))
+...     lnpsi = np.zeros(shape=(steps,N))
+...     Energy, lnpsi = simulate_harmonic_min(alpha[i],steps,x)
+...     meanEn[i] = np.mean(Energy[4000:,:])
+...     varE[i] = np.var(Energy[4000:,:])
+...     print("alpha = ",alpha[i],", <E> = ", meanEn[i], "var(E) = ", varE[i])
+...
+...     meanlnpsi = np.mean(lnpsi[4000:,:])
+...     meanEtimeslnpsi = np.mean(lnpsi[4000:,:]*Energy[4000:,:])
+...     dEdalpha = 2*(meanEtimeslnpsi-meanEn[i]*meanlnpsi)
+...     alpha[i+1] = alpha[i] -gamma*dEdalpha
+...
+>>> alpha = np.delete(alpha, numbalpha, axis = 0)
+alpha =  1.2 , <E> =  0.694710000411 var(E) =  0.498871935951
+alpha =  0.780779885755 , <E> =  0.548714887257 var(E) =  0.104460897534
+alpha =  0.490301875193 , <E> =  0.499820237501 var(E) =  0.000180616921021
+alpha =  0.5091081624 , <E> =  0.499980195235 var(E) =  0.000171248187129
+alpha =  0.490476247239 , <E> =  0.499680997751 var(E) =  0.000160632890517
+alpha =  0.507504978699 , <E> =  0.499936982457 var(E) =  0.000115545993494
+alpha =  0.49222375173 , <E> =  0.50009285066 var(E) =  0.000119856721108
+alpha =  0.507757728666 , <E> =  0.500087447469 var(E) =  0.000112582440749
+alpha =  0.493357150244 , <E> =  0.500095677153 var(E) =  8.9207589968e-05
+alpha =  0.506876068888 , <E> =  0.500290102105 var(E) =  8.66020181856e-05
+```
+
+```python
+
+11
 ```
 
 ```python
