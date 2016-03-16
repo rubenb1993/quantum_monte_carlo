@@ -1,6 +1,7 @@
 ```python
 >>> import matplotlib.pyplot as plt
 >>> import numpy as np
+>>> from scipy.optimize import fsolve
 ...
 >>> %matplotlib inline
 ```
@@ -156,8 +157,87 @@ alpha =  0.2 , <E> =  -2.87653363486 var(E) =  0.0969477551553
 alpha =  0.25 , <E> =  -2.87391030154 var(E) =  0.0887472087972
 ```
 
-```python
+## Hydrogen Molecule
 
+```python
+>>> def simulate_hydrogen_molecule(s,a,beta,steps,X):
+...     """A variational Monte Carlo simulation for a helium atom.
+...     Based on theory of ``Computational Physics'' by J.M. Thijssen, chapter 12.2 (2nd edition)
+...     X is an (2N,3) matrix with particle pairs (x,y,z) position. Particles are paired with i and N+i
+...     alpha is the trial variable for the trial wave function of the form exp(-alpha * r)
+...     steps is the amount of steps taken by the walkers
+...     Energy (steps, N) is the energy of each particle pair at timestep j
+...     """
+...     for j in range(steps):
+...         X_new = X + (np.random.rand(2*N,3) - 0.5) * d
+...         r_old = np.linalg.norm(X,axis=1)
+...         r_new = np.linalg.norm(X_new,axis=1)
+...         r12_old = np.linalg.norm(X[0:N,:] - X[N:,:],axis=1)
+...         r12_new = np.linalg.norm(X_new[0:N,:] - X_new[N:,:],axis=1)
+...
+...         psi_fact_old = 1 + alpha*r12_old
+...         psi_fact_new = 1 + alpha*r12_new
+...
+...         psi_old = np.exp(-2*r_old[0:N] - 2*r_old[N:]) * np.exp(r12_old/(2*psi_fact_old))
+...         psi_new= np.exp(-2*r_new[0:N] - 2*r_new[N:]) * np.exp(r12_new/(2*psi_fact_new))
+...
+...         p = (psi_new/psi_old) ** 2
+...         m = p > np.random.rand(N) #Vector with acceptance of new position {size= (200,1)}
+...         m = np.transpose(np.tile(m,(3,2))) #make from m a 400,3 matrix by repeating m
+...         X = X_new*(m) + X*~(m)
+...
+...         #Make normalization vector of (200,3) to normalize each particle pair
+...         r1_length = np.transpose(np.tile(np.linalg.norm(X[0:N,:], axis=1), (3,1)))
+...         r2_length = np.transpose(np.tile(np.linalg.norm(X[N:,:], axis=1), (3,1)))
+...
+...         #Vectors for energy calculation
+...         r1r2_diff = X[0:N,:] - X[N:,:]
+...         r1r2_diff_hat = X[0:N,:]/r1_length - X[N:,:]/r2_length
+...
+...         #recurring factors in energy calculation
+...         r12 = np.linalg.norm(X[0:N,:] - X[N:,:], axis=1)
+...         psi_fact = 1 + alpha*r12
+...
+...         #dot product (r1_hat - r2_hat) * (r1 - r2)
+...         dot_product = np.sum(r1r2_diff_hat*r1r2_diff, axis=1)
+...
+...         Energy[j,:] = -4 + dot_product / (r12*psi_fact**2) - 1 / (r12*psi_fact**3) - 1 / (4*psi_fact**4) + 1 / r12
+...     return Energy
+```
+
+```python
+>>> beta = 1
+>>> N = 400
+>>> steps = 30000
+>>> d = 0.3
+>>> s = 1
+>>> def f(a):
+...     """Coulumb cusp condition analytical expression
+...     """"
+...     return 1/(1 + np.exp(-s/a)) - a
+...
+>>> a = fsolve(f,0.1)
+>>> print(a)
+>>> print(f(a))
+[ 0.98318321]
+[  2.22044605e-16]
+```
+
+```python
+>>> X = np.random.uniform(-2,2,(2*N,3))
+>>> Energy = simulate_hydrogen_atom(s,a,beta,steps,X)
+>>> meanEn = np.mean(Energy[4000:,:])
+>>> varE = np.var(Energy[4000:,:])
+...
+>>> print("beta = ",beta,", <E> = ", meanEn, "var(E) = ", varE)
+alpha =  0.05 , <E> =  -2.87115747721 var(E) =  0.175024515771
+alpha =  0.075 , <E> =  -2.87671725997 var(E) =  0.153744624121
+alpha =  0.1 , <E> =  -2.87637077663 var(E) =  0.136753147217
+alpha =  0.125 , <E> =  -2.87629164014 var(E) =  0.122201267971
+alpha =  0.15 , <E> =  -2.8785236435 var(E) =  0.111547873615
+alpha =  0.175 , <E> =  -2.87847111638 var(E) =  0.103380955243
+alpha =  0.2 , <E> =  -2.87653363486 var(E) =  0.0969477551553
+alpha =  0.25 , <E> =  -2.87391030154 var(E) =  0.0887472087972
 ```
 
 ```python
