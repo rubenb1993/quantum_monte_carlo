@@ -142,9 +142,7 @@ alpha =  0.2 , <E> =  -2.87737875063 var(E) =  0.096748373754
 alpha =  0.25 , <E> =  -2.8727049448 var(E) =  0.0882921842801
 ```
 
-```python
->>> ## Alpha minimizer
-```
+## Alpha minimizer
 
 ```python
 >>> def simulate_harmonic_min(alpha,steps,x):
@@ -199,7 +197,6 @@ alpha =  0.506876068888 , <E> =  0.500290102105 var(E) =  8.66020181856e-05
 
 ```python
 
-11
 ```
 
 ```python
