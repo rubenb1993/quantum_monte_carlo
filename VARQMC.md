@@ -159,50 +159,34 @@ alpha =  0.25 , <E> =  -2.87516014275 var(E) =  0.0886909592825
 ```python
 >>> #%%timeit
 ... numbalpha = 20
->>> alpha = np.zeros(shape=(numbalpha+1,))
->>> alpha[0] = 1.2
+>>> alpha = 1.2
 >>> beta = 0.6
 >>> N = 400
 >>> steps = 30000
 >>> d = 0.05 #movement size
->>> meanEn = np.zeros(shape=(numbalpha,))
->>> varE = np.zeros(shape=(numbalpha,))
-...
->>> for i in range(numbalpha):
+>>> varE = 10
+>>> i = 0
+>>> while varE > 0.01 and i < numbalpha:
 ...     x = np.random.uniform(-1,1,(N))
 ...     Energy = np.zeros(shape=(steps,N))
 ...     lnpsi = np.zeros(shape=(steps,N))
-...     Energy, lnpsi = simulate_harmonic_min(alpha[i],steps,x)
-...     meanEn[i] = np.mean(Energy[4000:,:])
-...     varE[i] = np.var(Energy[4000:,:])
-...     print("alpha = ",alpha[i],", <E> = ", meanEn[i], "var(E) = ", varE[i])
+...     Energy, lnpsi = simulate_harmonic_min(alpha,steps,x)
+...     meanEn = np.mean(Energy[4000:,:])
+...     varE = np.var(Energy[4000:,:])
+...     print("alpha = ",alpha,", <E> = ", meanEn, "var(E) = ", varE)
 ...
 ...     meanlnpsi = np.mean(lnpsi[4000:,:])
 ...     meanEtimeslnpsi = np.mean(lnpsi[4000:,:]*Energy[4000:,:])
-...     dEdalpha = 2*(meanEtimeslnpsi-meanEn[i]*meanlnpsi)
-...     alpha[i+1] = alpha[i] -((i+1)**(-beta))*dEdalpha
+...     dEdalpha = 2*(meanEtimeslnpsi-meanEn*meanlnpsi)
+...     alpha -= alpha - ((i+1)**(-beta))*dEdalpha
+...     i += 1
 ...
->>> alpha = np.delete(alpha, numbalpha, axis = 0)
-alpha =  1.2 , <E> =  0.708194948914 var(E) =  0.492694128043
-alpha =  0.785971320972 , <E> =  0.546702353587 var(E) =  0.113401028663
-alpha =  0.582527158993 , <E> =  0.507436310048 var(E) =  0.0114999319783
-alpha =  0.515940561571 , <E> =  0.500684608823 var(E) =  0.000471466738944
-alpha =  0.50326862041 , <E> =  0.499972069788 var(E) =  2.20369362218e-05
-alpha =  0.500710108194 , <E> =  0.500010631949 var(E) =  9.26911934655e-07
-alpha =  0.500264949444 , <E> =  0.500008128149 var(E) =  1.32094123593e-07
-alpha =  0.500109872723 , <E> =  0.500000851039 var(E) =  2.42079739598e-08
-alpha =  0.500046607238 , <E> =  0.50000350017 var(E) =  3.69319775888e-09
-alpha =  0.500025404914 , <E> =  0.499999893855 var(E) =  1.28575583877e-09
-alpha =  0.50001269245 , <E> =  0.500000142471 var(E) =  3.1737555282e-10
-alpha =  0.500006760645 , <E> =  0.500000245201 var(E) =  8.46468143936e-11
-alpha =  0.500003941543 , <E> =  0.500000016049 var(E) =  3.05745966148e-11
-alpha =  0.500002276878 , <E> =  0.499999979078 var(E) =  1.14067078532e-11
-alpha =  0.500001248524 , <E> =  0.500000019565 var(E) =  3.04497525324e-12
-alpha =  0.500000768203 , <E> =  0.500000052833 var(E) =  1.03447208002e-12
-alpha =  0.500000513068 , <E> =  0.500000016254 var(E) =  4.8691684497e-13
-alpha =  0.500000339683 , <E> =  0.49999998487 var(E) =  2.58973698097e-13
-alpha =  0.500000205091 , <E> =  0.500000005959 var(E) =  7.85035582248e-14
-alpha =  0.500000139675 , <E> =  0.500000003232 var(E) =  3.68766325813e-14
+>>> print("End result: alpha = ",alpha,", <E> = ", meanEn, 'var(E) = ', varE)
+alpha =  1.2 , <E> =  0.713789892327 var(E) =  0.469265522051
+alpha =  0.805659225167 , <E> =  0.556528769304 var(E) =  0.124714953222
+alpha =  0.599485564841 , <E> =  0.506300250735 var(E) =  0.0171733492035
+alpha =  0.495902823234 , <E> =  0.500187585504 var(E) =  3.63418961187e-05
+End result: alpha =  0.501778906218 , <E> =  0.500187585504 var(E) =  3.63418961187e-05
 ```
 
 ```python
@@ -220,52 +204,38 @@ alpha =  0.500000139675 , <E> =  0.500000003232 var(E) =  3.68766325813e-14
 ```python
 >>> #%%timeit
 ... numbalpha = 20
->>> alpha = np.zeros(shape=(numbalpha+1,))
->>> alpha[0] = 0.7
+>>> alpha = 0.7
 >>> beta = 0.6
 >>> N = 400
 >>> steps = 30000
 >>> d = 0.05 #movement size
->>> meanEn = np.zeros(shape=(numbalpha,))
->>> varE = np.zeros(shape=(numbalpha,))
+>>> varE = 10
+>>> i = 0
 ...
-...
->>> for i in range(numbalpha):
+>>> while varE > 0.001 and i < numbalpha:
 ...     x = np.random.uniform(-1,1,(N,3))
 ...     Energy = np.zeros(shape=(steps,N))
 ...     lnpsi = np.zeros(shape=(steps,N))
-...     Energy, lnpsi = simulate_hydrogen_atom_min(alpha[i],steps,x)
-...     meanEn[i] = np.mean(Energy[4000:,:])
-...     varE[i] = np.var(Energy[4000:,:])
+...     Energy, lnpsi = simulate_hydrogen_atom_min(alpha,steps,x)
+...     meanEn = np.mean(Energy[4000:,:])
+...     varE = np.var(Energy[4000:,:])
 ...
-...     print("alpha = ",alpha[i],", <E> = ", meanEn[i], "var(E) = ", varE[i])
+...     print("alpha = ",alpha,", <E> = ", meanEn, "var(E) = ", varE)
 ...
 ...     meanlnpsi = np.mean(lnpsi[4000:,:])
 ...     meanEtimeslnpsi = np.mean(lnpsi[4000:,:]*Energy[4000:,:])
-...     dEdalpha = 2*(meanEtimeslnpsi-meanEn[i]*meanlnpsi)
-...     alpha[i+1] = alpha[i] -((i+1)**(-beta))*dEdalpha
+...     dEdalpha = 2*(meanEtimeslnpsi-meanEn*meanlnpsi)
+...     alpha -= ((i+1)**(-beta))*dEdalpha
+...     i += 1
 ...
->>> alpha = np.delete(alpha, numbalpha, axis = 0)
-alpha =  0.7 , <E> =  -0.488425121979 var(E) =  0.0535864985323
-alpha =  0.907692862344 , <E> =  -0.501974354319 var(E) =  0.00722230726736
-alpha =  0.937279977592 , <E> =  -0.503444755849 var(E) =  0.00393425394877
-alpha =  0.95150979846 , <E> =  -0.501440346503 var(E) =  0.00226437364314
-alpha =  0.955150079483 , <E> =  -0.500388759757 var(E) =  0.00180209885257
-alpha =  0.958050565313 , <E> =  -0.502054306976 var(E) =  0.00207269005911
-alpha =  0.961872307088 , <E> =  -0.501160489915 var(E) =  0.00141691605791
-alpha =  0.963298308992 , <E> =  -0.502442018081 var(E) =  0.00135902745328
-alpha =  0.966278627158 , <E> =  -0.501980036858 var(E) =  0.00120548961465
-alpha =  0.968452263326 , <E> =  -0.501432412668 var(E) =  0.00104162133578
-alpha =  0.969940146234 , <E> =  -0.501786836668 var(E) =  0.000938258858578
-alpha =  0.97283738231 , <E> =  -0.502152063244 var(E) =  0.000810039384146
-alpha =  0.973654115647 , <E> =  -0.501114864581 var(E) =  0.000925426312754
-alpha =  0.974910238481 , <E> =  -0.501465784055 var(E) =  0.000645964158584
-alpha =  0.97672147083 , <E> =  -0.501401998704 var(E) =  0.000576265823781
-alpha =  0.977769147755 , <E> =  -0.500721920624 var(E) =  0.000502526926938
-alpha =  0.978943229862 , <E> =  -0.500996472554 var(E) =  0.000450960713468
-alpha =  0.980246617808 , <E> =  -0.5014472737 var(E) =  0.000417948367572
-alpha =  0.981070469812 , <E> =  -0.500345811938 var(E) =  0.000347110724603
-alpha =  0.981500949124 , <E> =  -0.500817142623 var(E) =  0.00036159897885
+>>> print("End result: alpha = ",alpha,", <E> = ", meanEn, 'var(E) = ', varE)
+alpha =  0.7 , <E> =  -0.484607664436 var(E) =  0.0520042652239
+alpha =  0.950513592372 , <E> =  -0.502979011176 var(E) =  0.00259511090811
+alpha =  0.960569933486 , <E> =  -0.501006210651 var(E) =  0.00147155585563
+alpha =  0.96826958044 , <E> =  -0.502104445138 var(E) =  0.00106939365245
+alpha =  0.970115200392 , <E> =  -0.500945643954 var(E) =  0.00100783752149
+alpha =  0.974705272081 , <E> =  -0.501639390298 var(E) =  0.00068897093722
+End result: alpha =  0.975648814032 , <E> =  -0.501639390298 var(E) =  0.00068897093722
 ```
 
 ```python
@@ -305,52 +275,36 @@ alpha =  0.981500949124 , <E> =  -0.500817142623 var(E) =  0.00036159897885
 
 ```python
 >>> numbalpha = 20
->>> alpha = np.zeros(shape=(numbalpha+1,))
->>> alpha[0] = 1.2
+>>> alpha = 0.3
 >>> beta = 0.6
 >>> N = 400
 >>> steps = 10000
 >>> d = 0.3 #movement size
->>> meanEn = np.zeros(shape=(numbalpha,))
->>> varE = np.zeros(shape=(numbalpha,))
 ...
+>>> varE = 10
+>>> i = 0
 ...
->>> for i in range(numbalpha):
+>>> while varE > 0.01 and i < numbalpha:
 ...     X = np.random.uniform(-2,2,(2*N,3))
 ...     Energy = np.zeros(shape=(steps,N))
 ...     lnpsi = np.zeros(shape=(steps,N))
-...     Energy, lnpsi = simulate_helium_vector_min(alpha[i],steps,X,d)
-...     meanEn[i] = np.mean(Energy[4000:,:])
-...     varE[i] = np.var(Energy[4000:,:])
+...     Energy, lnpsi = simulate_helium_vector_min(alpha,steps,X,d)
+...     meanEn = np.mean(Energy[4000:,:])
+...     varE = np.var(Energy[4000:,:])
 ...
-...     print("alpha = ",alpha[i],", <E> = ", meanEn[i], "var(E) = ", varE[i])
+...     print("alpha = ",alpha,", <E> = ", meanEn, "var(E) = ", varE)
 ...
 ...     meanlnpsi = np.mean(lnpsi[4000:,:])
 ...     meanEtimeslnpsi = np.mean(lnpsi[4000:,:]*Energy[4000:,:])
-...     dEdalpha = 2*(meanEtimeslnpsi-meanEn[i]*meanlnpsi)
-...     alpha[i+1] = alpha[i] -((i+1)**(-beta))*dEdalpha
+...     dEdalpha = 2*(meanEtimeslnpsi-meanEn*meanlnpsi)
+...     alpha -=  ((i+1)**(-beta))*dEdalpha
+...     i += 1
 ...
->>> alpha = np.delete(alpha, numbalpha, axis = 0)
-alpha =  1.2 , <E> =  -2.81080791673 var(E) =  0.228563474769
-alpha =  1.15971635351 , <E> =  -2.81342554033 var(E) =  0.220487069726
-alpha =  1.13222615974 , <E> =  -2.82020993145 var(E) =  0.214194045027
-alpha =  1.11008139892 , <E> =  -2.82603445107 var(E) =  0.209166445006
-alpha =  1.09103872417 , <E> =  -2.82094035002 var(E) =  0.204710267929
-alpha =  1.07421042789 , <E> =  -2.82291419958 var(E) =  0.202296422115
-alpha =  1.05885588317 , <E> =  -2.8206525684 var(E) =  0.199683214721
-alpha =  1.04463862716 , <E> =  -2.82275368919 var(E) =  0.197084726997
-alpha =  1.03134580139 , <E> =  -2.82986753047 var(E) =  0.19378844249
-alpha =  1.01873567098 , <E> =  -2.82752902034 var(E) =  0.190960994076
-alpha =  1.00683364509 , <E> =  -2.82496295033 var(E) =  0.189717279609
-alpha =  0.995438578827 , <E> =  -2.82474222376 var(E) =  0.187850542409
-alpha =  0.984459509987 , <E> =  -2.82926414715 var(E) =  0.185203559006
-alpha =  0.973893283581 , <E> =  -2.81930317836 var(E) =  0.184169674038
-alpha =  0.963721207093 , <E> =  -2.82866572328 var(E) =  0.181016642671
-alpha =  0.953828744026 , <E> =  -2.82493769034 var(E) =  0.179174943821
-alpha =  0.944292383731 , <E> =  -2.82609216377 var(E) =  0.176502079365
-alpha =  0.935054101109 , <E> =  -2.82957928399 var(E) =  0.176140550548
-alpha =  0.925930761949 , <E> =  -2.83272309818 var(E) =  0.173159012946
-alpha =  0.917070724981 , <E> =  -2.82858984252 var(E) =  0.169321993791
+>>> print("End result: alpha = ",alpha,", <E> = ", meanEn, 'var(E) = ', varE)
+alpha =  0.3 , <E> =  -2.87215493533 var(E) =  0.0851903521687
+alpha =  0.231872401931 , <E> =  -2.87377270434 var(E) =  0.0906146196936
+alpha =  0.197044404797 , <E> =  -2.87583655031 var(E) =  0.0975278326562
+End result: alpha =  0.178374389803 , <E> =  -2.87583655031 var(E) =  0.0975278326562
 ```
 
 ```python
