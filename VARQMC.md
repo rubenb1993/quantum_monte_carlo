@@ -408,45 +408,6 @@ alpha =  0.25 , <E> =  -2.87391030154 var(E) =  0.0887472087972
 ```
 
 ```python
->>> from types import SimpleNamespace
-```
-
-```python
->>> a = np.zeros((2,3))
->>> a
-array([[ 0.,  0.,  0.],
-       [ 0.,  0.,  0.]])
-```
-
-```python
->>> b = np.ones(2)
-```
-
-```python
-
-```
-
-```python
->>> a
-array([[ 1.,  0.,  0.],
-       [ 1.,  0.,  0.]])
-```
-
-```python
-
-```
-
-```python
->>> b
-array([ 1.,  1.])
-```
-
-```python
->>> a[:, 0] += b
->>> a
-```
-
-```python
 >>> #a = fsolve(f,0.1)
 ... a = 1
 >>> pos_walker = np.random.rand(N,3,2,2)
@@ -480,7 +441,8 @@ array([ 1.,  1.])
 >>> r_12_abs = apply_mask(r_12_abs, mask_r_abs).T
 >>> r_1L, r_2L, r_1R, r_2R = apply_mask(left_right_array, mask_left_right).T
 >>> r_12 = np.transpose(apply_mask(r_12, mask_r_12), axes = [1,0,2])
->>> r_12_hat = np.transpose(r_12/r_12_abs, axes = [1,0,2])
+>>> r_12 = np.squeeze(r_12)
+>>> r_12_hat = r_12/r_12_abs
 >>> def normalize(vec):
 ...     absvec = np.linalg.norm(vec)
 ...     return absvec, vec/absvec
@@ -492,29 +454,19 @@ array([ 1.,  1.])
 >>> r_2R_abs, r_2R_hat = normalize(r_2R)
 ...
 >>> dot_1 = (phi_1L*r_1L_hat + phi_1R*r_1R_hat)/phi_1 - (phi_2L*r_2L_hat + phi_2R*r_2R_hat)/phi_2
->>> dot_2 = r_12/(2*a*(1 + beta*r_12_abs)**2)
->>> print(dot_1.shape,dot_2.shape)
+>>> dot_2 = r_12/(2*a*(1 + beta*r_12_abs*r_12_abs))
 ...
->>> # dot_product = np.sum(1*r1r2_diff, axis=1)
+>>> dot_product = np.sum(dot_1*dot_2, axis=0)
 ...
+...
+>>> #Energy = (-1/a**2 + (phi_1L/r_1L_abs + phi_1R/r_1R_abs)/(a*phi_1) + (phi_2L/r_2L_abs + phi_2R/r_2R_abs)/(a*phi_2) - \
+... #         1/r_1L_abs - 1/r_1R_abs - 1/r_2L_abs - 1/r_2R_abs + 1/r_12_abs - ((4*beta + 1)*r_12_abs + 4)/(4*r_12_abs*(1 + beta*r_12_abs)**4) + \
+... #        np.dot((phi_1L*r_1L_hat + phi_1R*r_1R_hat)/phi_1 - (phi_2L*r_2L_hat + phi_2R*r_2R_hat)/phi_2, r_12/(2*a*(1 + beta*r_12_abs)**2)))
 ...
 ... Energy = (-1/a**2 + (phi_1L/r_1L_abs + phi_1R/r_1R_abs)/(a*phi_1) + (phi_2L/r_2L_abs + phi_2R/r_2R_abs)/(a*phi_2) - \
 ...          1/r_1L_abs - 1/r_1R_abs - 1/r_2L_abs - 1/r_2R_abs + 1/r_12_abs - ((4*beta + 1)*r_12_abs + 4)/(4*r_12_abs*(1 + beta*r_12_abs)**4) + \
-...          np.dot((phi_1L*r_1L_hat + phi_1R*r_1R_hat)/phi_1 - (phi_2L*r_2L_hat + phi_2R*r_2R_hat)/phi_2, r_12/(2*a*(1 + beta*r_12_abs)**2)))
+...         dot_product)
 ...
 >>> print(Energy.shape)
-(3, 400) (3, 400, 400)
-(3, 3, 400)
-```
-
-```python
-
-```
-
-```python
->>> phi_1L[:, 1] == phi_1L[:, 1]*m
-```
-
-```python
-
+(1, 400)
 ```
