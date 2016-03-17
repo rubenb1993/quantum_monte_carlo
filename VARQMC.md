@@ -229,27 +229,111 @@ alpha =  0.25 , <E> =  -2.87391030154 var(E) =  0.0887472087972
 ```
 
 ```python
+>>> from types import SimpleNamespace
+```
+
+```python
+>>> a = np.zeros((2,3))
+>>> a
+array([[ 0.,  0.,  0.],
+       [ 0.,  0.,  0.]])
+```
+
+```python
+>>> b = np.ones(2)
+```
+
+```python
+
+```
+
+```python
+>>> a
+array([[ 1.,  0.,  0.],
+       [ 1.,  0.,  0.]])
+```
+
+```python
+
+```
+
+```python
+>>> b
+array([ 1.,  1.])
+```
+
+```python
+>>> a[:, 0] += b
+>>> a
+```
+
+```python
 >>> #a = fsolve(f,0.1)
 ... a = 1
 >>> pos_walker = np.random.rand(N,3,2,2)
 >>> #pos_walker = np.ones([N,3,2,2])
-... pos_walker[:,:,:,1] = pos_walker[:,:,:,0] + (np.random.rand(N,3,2) - 0.5)*d
+... pos_walker[:,:,:,1] = pos_walker[...,0] + (np.random.rand(N,3,2) - 0.5)*d
 >>> offset_array = np.append(s/2*np.ones([N,1,2,2]),np.zeros([N,2,2,2]), axis=1)
 >>> left_right_array = np.append(pos_walker + offset_array, pos_walker - offset_array, axis=2)
 >>> phi_1L, phi_2L, phi_1R, phi_2R = np.transpose(np.exp(np.linalg.norm(left_right_array,axis=1)/-a), axes=[1, 0, 2])
 >>> phi_1 = phi_1L + phi_1R
 >>> phi_2 = phi_2L + phi_2R
->>> r_12_abs = np.linalg.norm(np.diff(pos_walker, axis=2), axis=1)
+>>> r_12 = np.diff(pos_walker, axis=2)
+>>> r_12_abs = np.linalg.norm(r_12, axis=1)
 >>> psi_jastrow = np.squeeze(np.exp(r_12_abs/(2*(1+beta*r_12_abs))))
 >>> psi = phi_1*phi_2*psi_jastrow
 >>> p = (psi[:,1]/psi[:,0]) ** 2
->>> m = p > np.random.rand(N)
->>> m = np.transpose(np.tile(m,(2,3,1)), axes=[2, 1, 0])
->>> pos_walker[:,:,:,0] = pos_walker[:,:,:,1]*m + pos_walker[:,:,:,0]*~m
+>>> mask = p > np.random.rand(N)
+>>> mask_walker = np.tile(mask,(2,3,1)).T
+>>> mask_left_right = np.tile(mask_walker,(1,1,2))
+>>> mask_r_abs = np.tile(mask,(1,1)).T
+>>> mask_r_12 = np.tile(mask,(1,3,1)).T
+>>> def apply_mask(mat, mask):
+...     return mat[..., 0] * mask + mat[..., 1] * ~mask
 ...
->>> Energy = (-1/a**2 + (phi_1L/r_1L + phi_1R/r_1R)/(a*phi_1) + (phi_2L/r_2L + phi_2R/r_2R)/(a*phi_2) -
-...          1/r_1L - 1/r_1R - 1/r_2L - 1/r_2R + 1/r_12_abs - ((4*beta + 1)*r_12_abs + 4)/(4*r_12_abs*(1 + beta*r_12_abs)**4) +
+>>> phi_1L = apply_mask(phi_1L, mask).T
+>>> phi_2L = apply_mask(phi_2L, mask).T
+>>> phi_1R = apply_mask(phi_1R, mask).T
+>>> phi_2R = apply_mask(phi_2R, mask).T
+>>> phi_1 = phi_1L + phi_1R
+>>> phi_2 = phi_2L + phi_2R
+>>> pos_walker[...,0] = apply_mask(pos_walker, mask_walker)
+>>> r_12_abs = apply_mask(r_12_abs, mask_r_abs).T
+>>> r_1L, r_2L, r_1R, r_2R = apply_mask(left_right_array, mask_left_right).T
+>>> r_12 = np.transpose(apply_mask(r_12, mask_r_12), axes = [1,0,2])
+>>> r_12_hat = np.transpose(r_12/r_12_abs, axes = [1,0,2])
+>>> def normalize(vec):
+...     absvec = np.linalg.norm(vec)
+...     return absvec, vec/absvec
+...
+...
+>>> r_1L_abs, r_1L_hat = normalize(r_1L)
+>>> r_2L_abs, r_2L_hat = normalize(r_2L)
+>>> r_1R_abs, r_1R_hat = normalize(r_1R)
+>>> r_2R_abs, r_2R_hat = normalize(r_2R)
+...
+>>> dot_1 = (phi_1L*r_1L_hat + phi_1R*r_1R_hat)/phi_1 - (phi_2L*r_2L_hat + phi_2R*r_2R_hat)/phi_2
+>>> dot_2 = r_12/(2*a*(1 + beta*r_12_abs)**2)
+>>> print(dot_1.shape,dot_2.shape)
+...
+>>> # dot_product = np.sum(1*r1r2_diff, axis=1)
+...
+...
+... Energy = (-1/a**2 + (phi_1L/r_1L_abs + phi_1R/r_1R_abs)/(a*phi_1) + (phi_2L/r_2L_abs + phi_2R/r_2R_abs)/(a*phi_2) - \
+...          1/r_1L_abs - 1/r_1R_abs - 1/r_2L_abs - 1/r_2R_abs + 1/r_12_abs - ((4*beta + 1)*r_12_abs + 4)/(4*r_12_abs*(1 + beta*r_12_abs)**4) + \
 ...          np.dot((phi_1L*r_1L_hat + phi_1R*r_1R_hat)/phi_1 - (phi_2L*r_2L_hat + phi_2R*r_2R_hat)/phi_2, r_12/(2*a*(1 + beta*r_12_abs)**2)))
+...
+>>> print(Energy.shape)
+(3, 400) (3, 400, 400)
+(3, 3, 400)
+```
+
+```python
+
+```
+
+```python
+>>> phi_1L[:, 1] == phi_1L[:, 1]*m
 ```
 
 ```python
