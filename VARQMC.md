@@ -410,9 +410,9 @@ alpha =  0.25 , <E> =  -2.87391030154 var(E) =  0.0887472087972
 ```python
 >>> #a = fsolve(f,0.1)
 ... a = 1
->>> #pos_walker = np.random.rand(N,3,2,2)
-... pos_walker = np.ones([N,3,2,2])
->>> pos_walker[:,:,:,1] = pos_walker[:,:,:,0] + (np.random.rand(N,3,2) - 0.5)*d
+>>> pos_walker = np.random.rand(N,3,2,2)
+>>> #pos_walker = np.ones([N,3,2,2])
+... pos_walker[:,:,:,1] = pos_walker[:,:,:,0] + (np.random.rand(N,3,2) - 0.5)*d
 >>> offset_array = np.append(s/2*np.ones([N,1,2,2]),np.zeros([N,2,2,2]), axis=1)
 >>> left_right_array = np.append(pos_walker + offset_array, pos_walker - offset_array, axis=2)
 >>> phi_1L, phi_2L, phi_1R, phi_2R = np.transpose(np.exp(np.linalg.norm(left_right_array,axis=1)/-a), axes=[1, 0, 2])
@@ -424,36 +424,11 @@ alpha =  0.25 , <E> =  -2.87391030154 var(E) =  0.0887472087972
 >>> p = (psi[:,1]/psi[:,0]) ** 2
 >>> m = p > np.random.rand(N)
 >>> m = np.transpose(np.tile(m,(2,3,1)), axes=[2, 1, 0])
->>> print(m.shape)
 >>> pos_walker[:,:,:,0] = pos_walker[:,:,:,1]*m + pos_walker[:,:,:,0]*~m
->>> #print(p.shape)
-(400, 3, 2)
-```
-
-```python
->>> r_1 = np.ones([1,3])
->>> r_2 = np.zeros([1,3])
->>> r_12 = r_1 - r_2
->>> r_12_abs = np.linalg.norm(r_12,axis=1)
->>> r_1L = r_1 + s/2*np.array([1,0,0])
->>> r_1L_abs = np.linalg.norm(r_1L, axis=1)
->>> r_1R = r_1 - s/2*np.array([1,0,0])
->>> r_1R_abs = np.linalg.norm(r_1R, axis=1)
->>> r_2L = r_2 + s/2*np.array([1,0,0])
->>> r_2L_abs = np.linalg.norm(r_2L, axis=1)
->>> r_2R = r_2 - s/2*np.array([1,0,0])
->>> r_2R_abs = np.linalg.norm(r_2R, axis=1)
->>> phi_1L, phi_1R, phi_2L, phi_2R = np.exp(-np.array([r_1L_abs, r_1R_abs, r_2L_abs, r_2R_abs])/a)
->>> phi_1 = phi_1L + phi_1R
->>> phi_2 = phi_2L + phi_2R
->>> r_1L_hat = r_1L/r_1L_abs
->>> r_1R_hat = r_1R/r_1R_abs
->>> r_2L_hat = r_2L/r_2L_abs
->>> r_2R_hat = r_2R/r_2R_abs
->>> r_12_hat = r_12/r_12_abs
 ...
->>> psi_jastrow = np.exp(r_12_abs/(2*(1+beta*r_12_abs)))
->>> psi =
+>>> Energy = (-1/a**2 + (phi_1L/r_1L + phi_1R/r_1R)/(a*phi_1) + (phi_2L/r_2L + phi_2R/r_2R)/(a*phi_2) -
+...          1/r_1L - 1/r_1R - 1/r_2L - 1/r_2R + 1/r_12_abs - ((4*beta + 1)*r_12_abs + 4)/(4*r_12_abs*(1 + beta*r_12_abs)**4) +
+...          np.dot((phi_1L*r_1L_hat + phi_1R*r_1R_hat)/phi_1 - (phi_2L*r_2L_hat + phi_2R*r_2R_hat)/phi_2, r_12/(2*a*(1 + beta*r_12_abs)**2)))
 ```
 
 ```python
