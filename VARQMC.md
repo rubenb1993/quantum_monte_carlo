@@ -350,6 +350,16 @@ End result: alpha =  0.961788697653 , <E> =  -0.502393901983 var(E) =  0.0021606
 ```
 
 ```python
+>>> ##Hydrogen Molecule
+```
+
+```python
+>>> def f(a):
+...     """Coulomb cusp condition analytical expression"""
+...     return (1/(1 + np.exp(-s/a)) - a)
+```
+
+```python
 >>> X = np.random.uniform(-2,2,(2*N,3))
 >>> Energy = simulate_hydrogen_atom(s,a,beta,steps,X)
 >>> meanEn = np.mean(Energy[4000:,:])
@@ -435,6 +445,73 @@ End result: alpha =  0.961788697653 , <E> =  -0.502393901983 var(E) =  0.0021606
 ...     return Energy
 ```
 
+```python
+>>> def simulate_hydrogen_molecule_min(s,beta,steps,pos_walker):
+...     a = fsolve(f,0.1)
+...     for j in range(steps):
+...         #Variational Monte Carlo step
+...         pos_walker[...,1] = pos_walker[...,0] + (np.random.rand(N,3,2) - 0.5)*d
+...         offset_array = np.append(s/2*np.ones([N,1,2,2]),np.zeros([N,2,2,2]), axis=1)
+...         left_right_array = np.append(pos_walker + offset_array, pos_walker - offset_array, axis=2)
+...         phi_1L, phi_2L, phi_1R, phi_2R = np.transpose(np.exp(np.linalg.norm(left_right_array,axis=1)/-a), axes=[1, 0, 2])
+...         phi_1 = phi_1L + phi_1R
+...         phi_2 = phi_2L + phi_2R
+...         r_12 = -np.diff(pos_walker, axis=2)
+...         r_12_abs = np.linalg.norm(r_12, axis=1)
+...         psi_jastrow = np.squeeze(np.exp(r_12_abs/(2*(1+beta*r_12_abs))))
+...         psi = phi_1*phi_2*psi_jastrow
+...         p = (psi[:,1]/psi[:,0]) ** 2
+...
+...         #Create masks for different quantities going through
+...         mask = p > np.random.rand(N)
+...         mask_walker = np.tile(mask,(2,3,1)).T
+...         mask_left_right = np.tile(mask,(4,3,1)).T
+...         mask_r_abs = np.tile(mask,(1,1)).T
+...         mask_r_12 = np.tile(mask,(1,3,1)).T
+...
+...
+...         #Create accepted quantities for energy calculation
+...         pos_walker[...,0] = apply_mask(pos_walker, mask_walker)
+...         r_1L, r_2L, r_1R, r_2R = apply_mask(left_right_array, mask_left_right).T
+...         phi_1L = apply_mask(phi_1L, mask).T
+...         phi_2L = apply_mask(phi_2L, mask).T
+...         phi_1R = apply_mask(phi_1R, mask).T
+...         phi_2R = apply_mask(phi_2R, mask).T
+...         phi_1 = phi_1L + phi_1R
+...         phi_2 = phi_2L + phi_2R
+...
+...         r_12 = np.squeeze(-np.diff(pos_walker[...,0], axis=2)).T
+...         r_12_abs, r_12_hat = normalize(r_12)
+...         r_12_abs = r_12_abs.T
+...         r_12_hat = r_12_hat
+>>> #         r_12_abs = apply_mask(r_12_abs, mask_r_abs).T
+... #         r_12 = np.transpose(apply_mask(r_12, mask_r_12), axes = [1,0,2])
+... #         r_12 = np.squeeze(r_12)
+... #         r_12_hat = r_12/r_12_abs
+...
+...         #normalize position vectors
+...         r_1L_abs, r_1L_hat = normalize(r_1L)
+...         r_2L_abs, r_2L_hat = normalize(r_2L)
+...         r_1R_abs, r_1R_hat = normalize(r_1R)
+...         r_2R_abs, r_2R_hat = normalize(r_2R)
+...
+...         #Calculate dot product of equation 18 of handout
+...         dot_1 = (phi_1L*r_1L_hat + phi_1R*r_1R_hat)/phi_1 - (phi_2L*r_2L_hat + phi_2R*r_2R_hat)/phi_2
+...         dot_2 = r_12_hat/(2*a*(1 + beta*r_12_abs*r_12_abs))
+...         dot_product = np.sum(dot_1*dot_2, axis=0)
+...
+...
+...         #Energy = (-1/a**2 + (phi_1L/r_1L_abs + phi_1R/r_1R_abs)/(a*phi_1) + (phi_2L/r_2L_abs + phi_2R/r_2R_abs)/(a*phi_2) - \
+...         #         1/r_1L_abs - 1/r_1R_abs - 1/r_2L_abs - 1/r_2R_abs + 1/r_12_abs - ((4*beta + 1)*r_12_abs + 4)/(4*r_12_abs*(1 + beta*r_12_abs)**4) + \
+...         #        np.dot((phi_1L*r_1L_hat + phi_1R*r_1R_hat)/phi_1 - (phi_2L*r_2L_hat + phi_2R*r_2R_hat)/phi_2, r_12/(2*a*(1 + beta*r_12_abs)**2)))
+...
+...         Energy[j,:] = (-1/a**2 + (phi_1L/r_1L_abs + phi_1R/r_1R_abs)/(a*phi_1) + (phi_2L/r_2L_abs + phi_2R/r_2R_abs)/(a*phi_2) - \
+...                  1/r_1L_abs - 1/r_1R_abs - 1/r_2L_abs - 1/r_2R_abs + 1/r_12_abs - ((4*beta + 1)*r_12_abs + 4)/(4*r_12_abs*(1 + beta*r_12_abs)**4) + \
+...                 dot_product)
+...         lnpsi[j,:] =  -r_12_abs**2/(2*(1+beta*r_12_abs)**2)
+...     return Energy, lnpsi
+```
+
 ---
 scrolled: true
 ...
@@ -444,19 +521,71 @@ scrolled: true
 >>> N = 400
 >>> steps = 30000
 >>> d = 0.3
->>> s = 0.2
+>>> s = 1.4011
 ...
 >>> meanEn = np.zeros(shape=(len(beta),))
 >>> varE = np.zeros(shape=(len(beta),))
 ...
+...
 >>> for i in range(len(beta)):
 ...     pos_walker = np.random.uniform(-2,2,(N,3,2,2))
 ...     Energy = np.zeros(shape=(steps,N))
+...
 ...     Energy = simulate_hydrogen_molecule(s, beta[i], steps, pos_walker)
 ...     meanEn[i] = np.mean(Energy[7000:,:])
 ...     varE[i] = np.var(Energy[7000:,:])
 ...
 ...     print("beta = ",beta[i],", <E> = ", meanEn[i], "var(E) = ", varE[i])
+beta =  0.1 , <E> =  -1.84359035615 var(E) =  0.0817939744649
+```
+
+```python
+>>> ## With Beta-minimizer
+...
+... numbbeta = 10
+>>> beta = 1
+>>> zeta = 0.51
+>>> N = 400
+>>> steps = 30000
+>>> d = 0.3
+>>> s = 1.4011
+...
+>>> meanEn = 0.0
+>>> diffmeanEn = 10
+>>> i = 0
+...
+>>> while diffmeanEn > 0.0001 and i < numbbeta:
+...     pos_walker = np.random.uniform(-2,2,(N,3,2,2))
+...     Energy = np.zeros(shape=(steps,N))
+...     lnpsi = np.zeros(shape=(steps,N))
+...
+...     Energy, lnpsi = simulate_hydrogen_molecule_min(s, beta, steps, pos_walker)
+...     meanEnNew = np.mean(Energy[7000:,:])
+...     varE = np.var(Energy[7000:,:])
+...
+...     diffmeanEn = np.absolute(meanEnNew - meanEn)
+...     meanEn = meanEnNew
+...     print("beta = ",beta,", <E> = ", meanEn, "var(E) = ", varE)
+...
+...     meanlnpsi = np.mean(lnpsi[7000:,:])
+...     meanEtimeslnpsi = np.mean(lnpsi[7000:,:]*Energy[7000:,:])
+...     dEdbeta = 2*(meanEtimeslnpsi-meanEn*meanlnpsi)
+...     #beta -= ((i+1)**(-zeta))*dEdbeta
+...     beta -= 0.5*dEdbeta
+...     i += 1
+...
+>>> print("End result: beta = ",beta,", <E> = ", meanEn, "var(E) = ", varE)
+beta =  1 , <E> =  -1.79916249978 var(E) =  0.0726801975622
+beta =  0.992896928994 , <E> =  -1.7985822389 var(E) =  0.0725764407134
+beta =  0.985620835585 , <E> =  -1.79913661997 var(E) =  0.0723620029823
+beta =  0.978356129361 , <E> =  -1.79986255278 var(E) =  0.0716931675419
+beta =  0.97116544164 , <E> =  -1.80002050038 var(E) =  0.0718865712256
+beta =  0.963901716743 , <E> =  -1.7985494772 var(E) =  0.0713152600309
+beta =  0.956619829892 , <E> =  -1.79948445608 var(E) =  0.0710534273537
+beta =  0.949186358023 , <E> =  -1.79997381101 var(E) =  0.0705409228059
+beta =  0.941827326487 , <E> =  -1.79957113437 var(E) =  0.0699409406194
+beta =  0.934467143632 , <E> =  -1.80066779828 var(E) =  0.0693557731524
+End result: beta =  0.92699156537 , <E> =  -1.80066779828 var(E) =  0.0693557731524
 ```
 
 ```python
