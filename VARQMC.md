@@ -119,11 +119,6 @@ alpha =  0.6 , <E> =  0.5065228474 var(E) =  0.0175632139657
 ...     meanEn[i] = np.mean(Energy[4000:,:])
 ...     varE[i] = np.var(Energy[4000:,:])
 ...     print("alpha = ",alpha[i],", <E> = ", meanEn[i], "var(E) = ", varE[i])
-alpha =  0.8 , <E> =  -0.500951463889 var(E) =  0.0301581243297
-alpha =  0.9 , <E> =  -0.503837775564 var(E) =  0.00946968379623
-alpha =  1 , <E> =  -0.5 var(E) =  0.0
-alpha =  1.1 , <E> =  -0.491888181923 var(E) =  0.0127833303647
-alpha =  1.2 , <E> =  -0.467792154199 var(E) =  0.0602454548027
 ```
 
 ## Helium Atom
@@ -147,6 +142,7 @@ alpha =  1.2 , <E> =  -0.467792154199 var(E) =  0.0602454548027
 ...     varE[i] = np.var(Energy[4000:,:])
 ...
 ...     print("alpha = ",alpha[i],", <E> = ", meanEn[i], "var(E) = ", varE[i])
+<<<<<<< HEAD
 alpha =  0.05 , <E> =  -2.87229008493 var(E) =  0.176021424779
 alpha =  0.075 , <E> =  -2.87507574409 var(E) =  0.153108213894
 alpha =  0.1 , <E> =  -2.87644176413 var(E) =  0.136218721972
@@ -339,40 +335,6 @@ End result: alpha =  0.961788697653 , <E> =  -0.502393901983 var(E) =  0.0021606
 ## Hydrogen Molecule
 
 ```python
->>> def simulate_hydrogen_molecule(s,a,beta,steps,X):
-...     """Variational Quantum mechanics procedure for calculating the expected energy from parameters s and beta
-...     Using the Coulomb cusp condition, and the method described in chapter 12.2 from Computational Physics by J.M. Thijssen
-...     steps: integer amount of steps the walkers walk
-...     X: (2*N,3) matrix of (x,y,z) position of all walker pairs (pairs: i and N+i) with N amount of walkers
-...     """
-...     a = fsolve(f,0.1)
-...     r_1 = np.ones([1,3])
-...     r_2 = np.zeros([1,3])
-...     r_12 = r_1 - r_2
-...     r_12_abs = np.linalg.norm(r_12,axis=1)
-...     r_1L = r_1 + s/2*np.array([1,0,0])
-...     r_1L_abs = np.linalg.norm(r_1L, axis=1)
-...     r_1R = r_1 - s/2*np.array([1,0,0])
-...     r_1R_abs = np.linalg.norm(r_1R, axis=1)
-...     r_2L = r_2 + s/2*np.array([1,0,0])
-...     r_2L_abs = np.linalg.norm(r_2L, axis=1)
-...     r_2R = r_2 - s/2*np.array([1,0,0])
-...     r_2R_abs = np.linalg.norm(r_2R, axis=1)
-...     phi_1L, phi_1R, phi_2L, phi_2R = np.exp(-np.array([r_1L_abs, r_1R_abs, r_2L_abs, r_2R_abs])/a)
-...     phi_1 = phi_1L + phi_1R
-...     phi_2 = phi_2L + phi_2R
-...     r_1L_hat = r_1L/r_1L_abs
-...     r_1R_hat = r_1R/r_1R_abs
-...     r_2L_hat = r_2L/r_2L_abs
-...     r_2R_hat = r_2R/r_2R_abs
-...     r_12_hat = r_12/r_12_abs
-...
-...     psi_jastrow = np.exp(r_12_abs/(2*(1+beta*r_12_abs)))
-...     psi =
-...     return Energy
-```
-
-```python
 >>> beta = 1
 >>> N = 400
 >>> steps = 30000
@@ -386,8 +348,6 @@ End result: alpha =  0.961788697653 , <E> =  -0.502393901983 var(E) =  0.0021606
 >>> a = fsolve(f,0.1)
 >>> print(a)
 >>> print(f(a))
-[ 0.78218829]
-[ -1.11022302e-16]
 ```
 
 ```python
@@ -397,76 +357,175 @@ End result: alpha =  0.961788697653 , <E> =  -0.502393901983 var(E) =  0.0021606
 >>> varE = np.var(Energy[4000:,:])
 ...
 >>> print("beta = ",beta,", <E> = ", meanEn, "var(E) = ", varE)
-alpha =  0.05 , <E> =  -2.87115747721 var(E) =  0.175024515771
-alpha =  0.075 , <E> =  -2.87671725997 var(E) =  0.153744624121
-alpha =  0.1 , <E> =  -2.87637077663 var(E) =  0.136753147217
-alpha =  0.125 , <E> =  -2.87629164014 var(E) =  0.122201267971
-alpha =  0.15 , <E> =  -2.8785236435 var(E) =  0.111547873615
-alpha =  0.175 , <E> =  -2.87847111638 var(E) =  0.103380955243
-alpha =  0.2 , <E> =  -2.87653363486 var(E) =  0.0969477551553
-alpha =  0.25 , <E> =  -2.87391030154 var(E) =  0.0887472087972
 ```
 
 ```python
->>> #a = fsolve(f,0.1)
-... a = 1
->>> pos_walker = np.random.rand(N,3,2,2)
->>> #pos_walker = np.ones([N,3,2,2])
-... pos_walker[:,:,:,1] = pos_walker[...,0] + (np.random.rand(N,3,2) - 0.5)*d
+>>> def normalize(vec):
+...     absvec = np.linalg.norm(vec, axis=0)
+...     return absvec, vec/absvec
+```
+
+```python
+>>> def apply_mask(mat, mask):
+...     return mat[..., 1] * mask + mat[..., 0] * ~mask
+```
+
+```python
+>>> def simulate_hydrogen_molecule(s,beta,steps,pos_walker):
+...     a = fsolve(f,0.1)
+...     for j in range(steps):
+...         #Variational Monte Carlo step
+...         pos_walker[...,1] = pos_walker[...,0] + (np.random.rand(N,3,2) - 0.5)*d
+...         offset_array = np.append(s/2*np.ones([N,1,2,2]),np.zeros([N,2,2,2]), axis=1)
+...         left_right_array = np.append(pos_walker + offset_array, pos_walker - offset_array, axis=2)
+...         phi_1L, phi_2L, phi_1R, phi_2R = np.transpose(np.exp(np.linalg.norm(left_right_array,axis=1)/-a), axes=[1, 0, 2])
+...         phi_1 = phi_1L + phi_1R
+...         phi_2 = phi_2L + phi_2R
+...         r_12 = -np.diff(pos_walker, axis=2)
+...         r_12_abs = np.linalg.norm(r_12, axis=1)
+...         psi_jastrow = np.squeeze(np.exp(r_12_abs/(2*(1+beta*r_12_abs))))
+...         psi = phi_1*phi_2*psi_jastrow
+...         p = (psi[:,1]/psi[:,0]) ** 2
+...
+...         #Create masks for different quantities going through
+...         mask = p > np.random.rand(N)
+...         mask_walker = np.tile(mask,(2,3,1)).T
+...         mask_left_right = np.tile(mask,(4,3,1)).T
+...         mask_r_abs = np.tile(mask,(1,1)).T
+...         mask_r_12 = np.tile(mask,(1,3,1)).T
+...
+...
+...         #Create accepted quantities for energy calculation
+...         pos_walker[...,0] = apply_mask(pos_walker, mask_walker)
+...         r_1L, r_2L, r_1R, r_2R = apply_mask(left_right_array, mask_left_right).T
+...         phi_1L = apply_mask(phi_1L, mask).T
+...         phi_2L = apply_mask(phi_2L, mask).T
+...         phi_1R = apply_mask(phi_1R, mask).T
+...         phi_2R = apply_mask(phi_2R, mask).T
+...         phi_1 = phi_1L + phi_1R
+...         phi_2 = phi_2L + phi_2R
+...
+...         r_12 = np.squeeze(-np.diff(pos_walker[...,0], axis=2)).T
+...         r_12_abs, r_12_hat = normalize(r_12)
+...         r_12_abs = r_12_abs.T
+...         r_12_hat = r_12_hat
+>>> #         r_12_abs = apply_mask(r_12_abs, mask_r_abs).T
+... #         r_12 = np.transpose(apply_mask(r_12, mask_r_12), axes = [1,0,2])
+... #         r_12 = np.squeeze(r_12)
+... #         r_12_hat = r_12/r_12_abs
+...
+...         #normalize position vectors
+...         r_1L_abs, r_1L_hat = normalize(r_1L)
+...         r_2L_abs, r_2L_hat = normalize(r_2L)
+...         r_1R_abs, r_1R_hat = normalize(r_1R)
+...         r_2R_abs, r_2R_hat = normalize(r_2R)
+...
+...         #Calculate dot product of equation 18 of handout
+...         dot_1 = (phi_1L*r_1L_hat + phi_1R*r_1R_hat)/phi_1 - (phi_2L*r_2L_hat + phi_2R*r_2R_hat)/phi_2
+...         dot_2 = r_12_hat/(2*a*(1 + beta*r_12_abs*r_12_abs))
+...         dot_product = np.sum(dot_1*dot_2, axis=0)
+...
+...
+...         #Energy = (-1/a**2 + (phi_1L/r_1L_abs + phi_1R/r_1R_abs)/(a*phi_1) + (phi_2L/r_2L_abs + phi_2R/r_2R_abs)/(a*phi_2) - \
+...         #         1/r_1L_abs - 1/r_1R_abs - 1/r_2L_abs - 1/r_2R_abs + 1/r_12_abs - ((4*beta + 1)*r_12_abs + 4)/(4*r_12_abs*(1 + beta*r_12_abs)**4) + \
+...         #        np.dot((phi_1L*r_1L_hat + phi_1R*r_1R_hat)/phi_1 - (phi_2L*r_2L_hat + phi_2R*r_2R_hat)/phi_2, r_12/(2*a*(1 + beta*r_12_abs)**2)))
+...
+...         Energy[j,:] = (-1/a**2 + (phi_1L/r_1L_abs + phi_1R/r_1R_abs)/(a*phi_1) + (phi_2L/r_2L_abs + phi_2R/r_2R_abs)/(a*phi_2) - \
+...                  1/r_1L_abs - 1/r_1R_abs - 1/r_2L_abs - 1/r_2R_abs + 1/r_12_abs - ((4*beta + 1)*r_12_abs + 4)/(4*r_12_abs*(1 + beta*r_12_abs)**4) + \
+...                 dot_product)
+...     return Energy
+```
+
+---
+scrolled: true
+...
+
+```python
+>>> beta = [0.1]
+>>> N = 400
+>>> steps = 30000
+>>> d = 0.3
+>>> s = 0.2
+...
+>>> meanEn = np.zeros(shape=(len(beta),))
+>>> varE = np.zeros(shape=(len(beta),))
+...
+>>> for i in range(len(beta)):
+...     pos_walker = np.random.uniform(-2,2,(N,3,2,2))
+...     Energy = np.zeros(shape=(steps,N))
+...     Energy = simulate_hydrogen_molecule(s, beta[i], steps, pos_walker)
+...     meanEn[i] = np.mean(Energy[7000:,:])
+...     varE[i] = np.var(Energy[7000:,:])
+...
+...     print("beta = ",beta[i],", <E> = ", meanEn[i], "var(E) = ", varE[i])
+```
+
+```python
+>>> plt.plot(Energy[7000:,1])
+```
+
+```python
+>>> pos_walker = np.random.uniform(-2,2,(N,3,2,2))
+...
+...
+>>> #Variational Monte Carlo step
+... pos_walker[...,1] = pos_walker[...,0] + (np.random.rand(N,3,2) - 0.5)*d
 >>> offset_array = np.append(s/2*np.ones([N,1,2,2]),np.zeros([N,2,2,2]), axis=1)
 >>> left_right_array = np.append(pos_walker + offset_array, pos_walker - offset_array, axis=2)
 >>> phi_1L, phi_2L, phi_1R, phi_2R = np.transpose(np.exp(np.linalg.norm(left_right_array,axis=1)/-a), axes=[1, 0, 2])
 >>> phi_1 = phi_1L + phi_1R
 >>> phi_2 = phi_2L + phi_2R
->>> r_12 = np.diff(pos_walker, axis=2)
+>>> r_12 = -np.diff(pos_walker, axis=2)
 >>> r_12_abs = np.linalg.norm(r_12, axis=1)
 >>> psi_jastrow = np.squeeze(np.exp(r_12_abs/(2*(1+beta*r_12_abs))))
 >>> psi = phi_1*phi_2*psi_jastrow
 >>> p = (psi[:,1]/psi[:,0]) ** 2
->>> mask = p > np.random.rand(N)
+...
+>>> #Create masks for different quantities going through
+... mask = p > np.random.rand(N)
 >>> mask_walker = np.tile(mask,(2,3,1)).T
->>> mask_left_right = np.tile(mask_walker,(1,1,2))
+>>> mask_left_right = np.tile(mask,(4,3,1)).T
 >>> mask_r_abs = np.tile(mask,(1,1)).T
 >>> mask_r_12 = np.tile(mask,(1,3,1)).T
->>> def apply_mask(mat, mask):
-...     return mat[..., 0] * mask + mat[..., 1] * ~mask
 ...
+...
+>>> #Create accepted quantities for energy calculation
+... pos_walker[...,0] = apply_mask(pos_walker, mask_walker)
+>>> r_1L, r_2L, r_1R, r_2R = apply_mask(left_right_array, mask_left_right).T
 >>> phi_1L = apply_mask(phi_1L, mask).T
 >>> phi_2L = apply_mask(phi_2L, mask).T
 >>> phi_1R = apply_mask(phi_1R, mask).T
 >>> phi_2R = apply_mask(phi_2R, mask).T
 >>> phi_1 = phi_1L + phi_1R
 >>> phi_2 = phi_2L + phi_2R
->>> pos_walker[...,0] = apply_mask(pos_walker, mask_walker)
->>> r_12_abs = apply_mask(r_12_abs, mask_r_abs).T
->>> r_1L, r_2L, r_1R, r_2R = apply_mask(left_right_array, mask_left_right).T
->>> r_12 = np.transpose(apply_mask(r_12, mask_r_12), axes = [1,0,2])
->>> r_12 = np.squeeze(r_12)
->>> r_12_hat = r_12/r_12_abs
->>> def normalize(vec):
-...     absvec = np.linalg.norm(vec)
-...     return absvec, vec/absvec
 ...
+>>> r_12 = np.squeeze(-np.diff(pos_walker[...,0], axis=2)).T
+>>> r_12_abs, r_12_hat = normalize(r_12)
+>>> r_12_abs = r_12_abs.T
+>>> r_12_hat = r_12_hat
+>>> # r_12_abs = apply_mask(r_12_abs, mask_r_abs).T
+... # r_12 = np.transpose(apply_mask(r_12, mask_r_12), axes = [1,0,2])
+... # r_12 = np.squeeze(r_12)
+... # r_12_hat = r_12/r_12_abs
 ...
->>> r_1L_abs, r_1L_hat = normalize(r_1L)
+... #normalize position vectors
+... r_1L_abs, r_1L_hat = normalize(r_1L)
 >>> r_2L_abs, r_2L_hat = normalize(r_2L)
 >>> r_1R_abs, r_1R_hat = normalize(r_1R)
 >>> r_2R_abs, r_2R_hat = normalize(r_2R)
 ...
->>> dot_1 = (phi_1L*r_1L_hat + phi_1R*r_1R_hat)/phi_1 - (phi_2L*r_2L_hat + phi_2R*r_2R_hat)/phi_2
->>> dot_2 = r_12/(2*a*(1 + beta*r_12_abs*r_12_abs))
-...
+>>> #Calculate dot product of equation 18 of handout
+... dot_1 = (phi_1L*r_1L_hat + phi_1R*r_1R_hat)/phi_1 - (phi_2L*r_2L_hat + phi_2R*r_2R_hat)/phi_2
+>>> dot_2 = r_12_hat/(2*a*(1 + beta*r_12_abs*r_12_abs))
 >>> dot_product = np.sum(dot_1*dot_2, axis=0)
-...
-...
 >>> #Energy = (-1/a**2 + (phi_1L/r_1L_abs + phi_1R/r_1R_abs)/(a*phi_1) + (phi_2L/r_2L_abs + phi_2R/r_2R_abs)/(a*phi_2) - \
 ... #         1/r_1L_abs - 1/r_1R_abs - 1/r_2L_abs - 1/r_2R_abs + 1/r_12_abs - ((4*beta + 1)*r_12_abs + 4)/(4*r_12_abs*(1 + beta*r_12_abs)**4) + \
 ... #        np.dot((phi_1L*r_1L_hat + phi_1R*r_1R_hat)/phi_1 - (phi_2L*r_2L_hat + phi_2R*r_2R_hat)/phi_2, r_12/(2*a*(1 + beta*r_12_abs)**2)))
 ...
+...
 ... Energy = (-1/a**2 + (phi_1L/r_1L_abs + phi_1R/r_1R_abs)/(a*phi_1) + (phi_2L/r_2L_abs + phi_2R/r_2R_abs)/(a*phi_2) - \
-...          1/r_1L_abs - 1/r_1R_abs - 1/r_2L_abs - 1/r_2R_abs + 1/r_12_abs - ((4*beta + 1)*r_12_abs + 4)/(4*r_12_abs*(1 + beta*r_12_abs)**4) + \
+...          1/r_1L_abs - 1/r_1R_abs - 1/r_2L_abs - 1/r_2R_abs + 1/r_12_abs - ((4*beta[0] + 1)*r_12_abs + 4)/(4*r_12_abs*(1 + beta[0]*r_12_abs)**4) + \
 ...         dot_product)
 ...
 >>> print(Energy.shape)
-(1, 400)
 ```
