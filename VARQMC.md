@@ -155,6 +155,8 @@
 >>> a = fsolve(f,0.1)
 >>> print(a)
 >>> print(f(a))
+[ 0.78218829]
+[ -1.11022302e-16]
 ```
 
 ```python
@@ -180,6 +182,7 @@
 ```python
 >>> def simulate_hydrogen_molecule(s,beta,steps,pos_walker):
 ...     a = fsolve(f,0.1)
+...     acceptance = np.zeros(N,)
 ...     for j in range(steps):
 ...         #Variational Monte Carlo step
 ...         pos_walker[...,1] = pos_walker[...,0] + (np.random.rand(N,3,2) - 0.5)*d
@@ -200,7 +203,7 @@
 ...         mask_left_right = np.tile(mask,(4,3,1)).T
 ...         mask_r_abs = np.tile(mask,(1,1)).T
 ...         mask_r_12 = np.tile(mask,(1,3,1)).T
-...
+...         acceptance += mask
 ...
 ...         #Create accepted quantities for energy calculation
 ...         pos_walker[...,0] = apply_mask(pos_walker, mask_walker)
@@ -238,9 +241,9 @@
 ...         #        np.dot((phi_1L*r_1L_hat + phi_1R*r_1R_hat)/phi_1 - (phi_2L*r_2L_hat + phi_2R*r_2R_hat)/phi_2, r_12/(2*a*(1 + beta*r_12_abs)**2)))
 ...
 ...         Energy[j,:] = (-1/a**2 + (phi_1L/r_1L_abs + phi_1R/r_1R_abs)/(a*phi_1) + (phi_2L/r_2L_abs + phi_2R/r_2R_abs)/(a*phi_2) - \
-...                  1/r_1L_abs - 1/r_1R_abs - 1/r_2L_abs - 1/r_2R_abs + 1/r_12_abs - ((4*beta + 1)*r_12_abs + 4)/(4*r_12_abs*(1 + beta*r_12_abs)**4) - \
+...                  1/r_1L_abs - 1/r_1R_abs - 1/r_2L_abs - 1/r_2R_abs + 1/r_12_abs - ((4*beta + 1)*r_12_abs + 4)/(4*r_12_abs*(1 + beta*r_12_abs)**4) + \
 ...                 dot_product)
-...     return Energy
+...     return Energy, acceptance
 ```
 
 ---
@@ -248,11 +251,11 @@ scrolled: true
 ...
 
 ```python
->>> beta = [0.2,0.05]
+>>> beta = [1]
 >>> N = 400
->>> steps = 30000
->>> d = 0.1
->>> s = 1.4011
+>>> steps = 300000
+>>> d = 2.0
+>>> s = 2.8022
 ...
 >>> meanEn = np.zeros(shape=(len(beta),))
 >>> varE = np.zeros(shape=(len(beta),))
@@ -260,15 +263,19 @@ scrolled: true
 >>> for i in range(len(beta)):
 ...     pos_walker = np.random.uniform(-2,2,(N,3,2,2))
 ...     Energy = np.zeros(shape=(steps,N))
-...     Energy = simulate_hydrogen_molecule(s, beta[i], steps, pos_walker)
-...     meanEn[i] = np.mean(Energy[4000:,:])
-...     varE[i] = np.var(Energy[4000:,:])
+...     Energy, acceptance = simulate_hydrogen_molecule(s, beta[i], steps, pos_walker)
+...     meanEn[i] = np.mean(Energy[10000:,:])
+...     varE[i] = np.var(Energy[10000:,:])
 ...
 ...     print("beta = ",beta[i],", <E> = ", meanEn[i], "var(E) = ", varE[i])
+...     print(np.amin(acceptance/steps))
+beta =  1 , <E> =  -1.37791149371 var(E) =  0.0550550582402
+0.47751
 ```
 
 ```python
->>> plt.plot(Energy[7000:,1])
+>>> plt.plot(Energy[10000:,1])
+[<matplotlib.lines.Line2D at 0x2143406df98>]
 ```
 
 ```python
