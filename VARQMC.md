@@ -7,6 +7,22 @@
 ```
 
 ```python
+>>> def Error(datavector, nblocks):
+...
+...     # Divide the datavector in nblocks and calculate the average value for each block
+...     datavector1 = datavector[0:len(datavector) - len(datavector)%nblocks]
+...     data_block = np.reshape(datavector1,(nblocks,-1))
+...     # Used to data block specific heat
+...     blockmean = np.mean(data_block,axis=1)
+...     blockstd = np.std(data_block,axis=1)
+...     # Calculate <A> en <A^2>
+...     Mean = np.mean(blockmean)
+...     # Standard deviation
+...     std = np.std(blockmean)
+...     return Mean, std, blockmean, blockstd
+```
+
+```python
 >>> def f(a):
 ...     """Coulomb cusp condition analytical expression"""
 ...     return (1/(1 + np.exp(-s/a)) - a)
