@@ -107,7 +107,7 @@ alpha =  0.6 , <E> =  0.510190280355 var(E) =  0.0164588352981
 ... alpha = [0.8,0.9,1,1.1,1.2]
 >>> N = 400
 >>> steps = 30000
->>> d = 0.05 #movement size
+>>> d = 0.5 #movement size
 >>> meanEn = np.zeros(shape=(len(alpha),))
 >>> varE = np.zeros(shape=(len(alpha),))
 ...
@@ -118,11 +118,19 @@ alpha =  0.6 , <E> =  0.510190280355 var(E) =  0.0164588352981
 ...     meanEn[i] = np.mean(Energy[4000:,:])
 ...     varE[i] = np.var(Energy[4000:,:])
 ...     print("alpha = ",alpha[i],", <E> = ", meanEn[i], "var(E) = ", varE[i])
-alpha =  0.8 , <E> =  -0.500951463889 var(E) =  0.0301581243297
-alpha =  0.9 , <E> =  -0.503837775564 var(E) =  0.00946968379623
+alpha =  0.8 , <E> =  -0.480592876734 var(E) =  0.0250040044617
+alpha =  0.9 , <E> =  -0.494936708088 var(E) =  0.00798100735279
 alpha =  1 , <E> =  -0.5 var(E) =  0.0
-alpha =  1.1 , <E> =  -0.491888181923 var(E) =  0.0127833303647
-alpha =  1.2 , <E> =  -0.467792154199 var(E) =  0.0602454548027
+alpha =  1.1 , <E> =  -0.494962730276 var(E) =  0.0122129976593
+alpha =  1.2 , <E> =  -0.480009467413 var(E) =  0.0555993862283
+```
+
+```python
+
+```
+
+```python
+
 ```
 
 ## Helium Atom
