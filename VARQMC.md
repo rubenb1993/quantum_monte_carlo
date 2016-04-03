@@ -10,7 +10,7 @@
 >>> def Error(datavector, nblocks):
 ...
 ...     # Divide the datavector in nblocks and calculate the average value for each block
-...     datavector1 = datavector[0:len(datavector) - len(datavector)%nblocks]
+...     datavector1 = datavector[0:len(datavector) - len(datavector)%nblocks,:]
 ...     data_block = np.reshape(datavector1,(nblocks,-1))
 ...     # Used to data block specific heat
 ...     blockmean = np.mean(data_block,axis=1)
@@ -53,7 +53,9 @@
 ```
 
 ```python
->>> def simulate_hydrogen_atom_min(alpha,steps,x):
+>>> def simulate_hydrogen_atom_min(alpha,steps,x,N):
+...     Energy = np.zeros(shape=(steps,N))
+...     lnpsi = np.zeros(shape=(steps,N))
 ...     "a variational monte carlo method for the hydrogen atom"
 ...     for j in range(steps):
 ...         x_new = x + (np.random.random_sample(np.shape(x)) - 0.5)*d
@@ -208,8 +210,7 @@
 
 ```python
 >>> numbalpha = 300
->>> alpha = 0.8
->>> beta = 1
+>>> alpha = 0.1
 >>> N = 400
 >>> steps = 100
 >>> steps_final = 30000
@@ -222,23 +223,23 @@
 >>> alpha_old = alpha
 >>> dalpha = 1
 ...
->>> while abs(dalpha) > 1e-4 and i < numbalpha:
+>>> while abs(dalpha) > 1e-6 and i < numbalpha:
 ...     x = np.random.uniform(-1,1,(N,3))
 ...     Energy = np.zeros(shape=(steps,N))
 ...     lnpsi = np.zeros(shape=(steps,N))
-...     Energy, lnpsi = simulate_hydrogen_atom_min(alpha,steps,x)
+...     Energy, lnpsi = simulate_hydrogen_atom_min(alpha,steps,x,N)
 ...     #meanEnNew = np.mean(Energy)
 ...     meanEn = np.mean(Energy)
 ...     varE = np.var(Energy)
 ...     #diffmeanEn = np.absolute(meanEnNew-meanEn)/abs(meanEnNew)
 ...     #meanEn = meanEnNew
 ...
-...     print("alpha = ",alpha,", <E> = ", meanEn, "dalpha(%) = ", dalpha)
+...     #print("alpha = ",alpha,", <E> = ", meanEn, "dalpha(%) = ", dalpha)
 ...
 ...     meanlnpsi = np.mean(lnpsi)
 ...     meanEtimeslnpsi = np.mean(lnpsi*Energy)
 ...     dEdalpha = 2*(meanEtimeslnpsi-meanEn*meanlnpsi)
-...     alpha -= 0.9*dEdalpha
+...     alpha -= 0.3*dEdalpha
 ...     dalpha = (alpha-alpha_old)/alpha_old
 ...     i += 1
 ...     alpha_old = alpha
@@ -247,11 +248,13 @@
 ...
 >>> Energy_final = np.zeros(shape=(steps_final,N))
 >>> x = np.random.uniform(-1,1,(N,3))
->>> Energy_final = simulate_hydrogen_atom_min(alpha,steps,x)[0]
->>> meanEn = np.mean(Energy_final)
->>> varE = np.var(Energy_final)
+>>> Energy_final = simulate_hydrogen_atom_min(alpha,steps_final,x,N)[0]
+>>> Energy_truncated = Energy_final[4000:,:]
+>>> print(Energy_truncated.shape)
+>>> meanEn = Error(Energy_truncated,4)[0]
+>>> stdE = Error(Energy_truncated,4)[1]
 ...
->>> print("<E> = ", meanEn, "var(E) = ", varE)
+>>> print("<E> = ", meanEn, "with error: ", stdE)
 ```
 
 ## Helium Atom
@@ -309,7 +312,7 @@
 
 ```python
 >>> numbbeta = 10000
->>> beta = 0.4
+>>> beta = 0.55
 >>> zeta = 0.51
 >>> N = 400
 >>> steps = 1000
@@ -350,8 +353,11 @@
 >>> Energy_final = np.zeros(shape=(steps_final,))
 >>> pos_walker = np.random.uniform(-2,2,(N,3,2,2))
 >>> Energy_final = simulate_hydrogen_molecule_min(s, beta, steps_final, pos_walker, N)[0]
->>> varE_final = np.var(Energy_final[7000:,:])
->>> mean_final = np.mean(Energy_final[7000:,:])
+>>> Energy_truncated = Energy_final[7000:,:]
+>>> varE_final = np.var(Energy_truncated)
+>>> mean_error_calculated = Error(Energy_truncated,6)[0]
+>>> std_error_calculated = Error(Energy_truncated,10)[1]
 ...
->>> print("Mean energy:", mean_final, " var(E): ", varE_final)
+...
+>>> print("mean with error function: ", mean_error_calculated, "and error: ", std_error_calculated)
 ```
