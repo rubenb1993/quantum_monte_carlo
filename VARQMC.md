@@ -1,20 +1,4 @@
 ```python
->>> import ipyparallel as ipp
->>> c = ipp.Client()
->>> view = c[0:3]
->>> print(c.ids)
-[0, 1, 2, 3]
-```
-
-```python
->>> %%px
-... import matplotlib.pyplot as plt
-... import numpy as np
-... from scipy.optimize import fsolve
-... %matplotlib inline
-```
-
-```python
 >>> import matplotlib.pyplot as plt
 >>> import numpy as np
 >>> from scipy.optimize import fsolve
@@ -22,8 +6,7 @@
 ```
 
 ```python
->>> %%px
-... def Error(datavector, nblocks):
+>>> def Error(datavector, nblocks):
 ...
 ...     # Divide the datavector in nblocks and calculate the average value for each block
 ...     datavector1 = datavector[0:len(datavector) - len(datavector)%nblocks,:]
@@ -39,28 +22,24 @@
 ```
 
 ```python
->>> %%px
-... def f(a):
+>>> def f(a):
 ...     """Coulomb cusp condition analytical expression"""
 ...     return (1/(1 + np.exp(-s/a)) - a)
 ```
 
 ```python
->>> %%px
-... def normalize(vec):
+>>> def normalize(vec):
 ...     absvec = np.linalg.norm(vec, axis=0)
 ...     return absvec, vec/absvec
 ```
 
 ```python
->>> %%px
-... def apply_mask(mat, mask):
+>>> def apply_mask(mat, mask):
 ...     return mat[..., 1] * mask + mat[..., 0] * ~mask
 ```
 
 ```python
->>> %%px
-... def simulate_harmonic_min(alpha,steps,x):
+>>> def simulate_harmonic_min(alpha,steps,x):
 ...     "A variational monte carlo method for a harmonic oscilator"
 ...     Energy = np.zeros(shape=(steps,N))
 ...     lnpsi = np.zeros(shape=(steps,N))
@@ -134,8 +113,6 @@
 ```
 
 ```python
-
->>> %%px
 >>> def simulate_hydrogen_molecule_min(s,beta,steps,pos_walker,N):
 ...     a = fsolve(f,0.1)
 ...     Energy = np.zeros(shape=(steps,N))
@@ -198,20 +175,19 @@
 ## 1D harmonic oscilator
 
 ```python
->>> %%px
-... numbalpha = 1
-... alpha = 1.2
-... beta = 0.6
-... N = 400
-... steps = 4000
-... steps_final = 30000
-... wastesteps = 4000
-... d = 0.05 #movement size
-... diffmeanEn = 10
-... meanEn = 0
-... i = 0
+>>> numbalpha = 1
+>>> alpha = 1.2
+>>> beta = 0.6
+>>> N = 400
+>>> steps = 4000
+>>> steps_final = 30000
+>>> wastesteps = 4000
+>>> d = 0.05 #movement size
+>>> diffmeanEn = 10
+>>> meanEn = 0
+>>> i = 0
 ...
-... while diffmeanEn > 0.0001 and i < numbalpha:
+>>> while diffmeanEn > 0.0001 and i < numbalpha:
 ...     x = np.random.uniform(-1,1,(N))
 ...     Energy, lnpsi = simulate_harmonic_min(alpha,steps,x)
 ...     meanEnNew = np.mean(Energy)
@@ -227,26 +203,16 @@
 ...     alpha -= 0.8 * dEdalpha
 ...     i += 1
 ...
-... print("End result: alpha = ",alpha,", <E> = ", meanEn, 'var(E) = ', varE)
-[stdout:0]
-alpha =  1.2 , <E> =  0.614648468698 var(E) =  0.594718492175
-End result: alpha =  0.800189248958 , <E> =  0.614648468698 var(E) =  0.594718492175
-[stdout:1]
-alpha =  1.2 , <E> =  0.643260454863 var(E) =  0.522643973296
-End result: alpha =  0.848642707028 , <E> =  0.643260454863 var(E) =  0.522643973296
-[stdout:2]
-alpha =  1.2 , <E> =  0.606753363554 var( E) =  0.652208540995
-End result: alpha =  0.761540476642 , <E> =  0.606753363554 var(E) =  0.652208540995
-[stdout:3]
-alpha =  1.2 , <E> =  0.582283316391 var(E) =  0.658176481734
-End result: alpha =  0.757528415641 , <E> =  0.582283316391 var(E) =  0.658176481734
+>>> print("End result: alpha = ",alpha,", <E> = ", meanEn, 'var(E) = ', varE)
+alpha =  1.2 , <E> =  0.598634277305 var(E) =  0.637661911352
+End result: alpha =  0.771319723461 , <E> =  0.598634277305 var(E) =  0.637661911352
 ```
 
 ```python
 >>> rslt = view.pull('alpha', targets=[0,1,2,3])
 >>> alpha = np.mean(rslt.get())
 >>> print(alpha)
-0.791975212067
+0.816064323819
 ```
 
 ```python
@@ -257,19 +223,18 @@ End result: alpha =  0.757528415641 , <E> =  0.582283316391 var(E) =  0.65817648
 ```
 
 ```python
->>> rslt = view.pull('Energy_final', targets=[0,1,2,3])
->>> Energy_final = np.transpose(np.asarray(rslt.get()),axes=[1,0,2]).reshape(30000,-1)
->>> print(Energy_final.shape)
-...
->>> varE_final = np.var(Energy_final[4000:,:])
+>>> #rslt = view.pull('Energy_final', targets=[0,1,2,3])
+... #Energy_final = np.transpose(np.asarray(rslt.get()),axes=[1,0,2]).reshape(30000,-1)
+... #print(Energy_final.shape)
+... varE_final = np.var(Energy_final[4000:,:])
 >>> mean_final = np.mean(Energy_final[4000:,:])
 (30000, 1600)
 ```
 
 ```python
->>> rslt = view.pull('Energy_final', targets=0)
+>>> rslt = view.pull('Energy_final', targets=1)
 >>> Energy_final1 = rslt.get()
->>> print(np.array_equal(Energy_final1[:,0],Energy_final[:,0]))
+>>> print(np.array_equal(Energy_final1[:,0],Energy_final[:,400]))
 True
 ```
 
@@ -377,42 +342,72 @@ True
 >>> zeta = 0.51
 >>> N = 400
 >>> steps = 1000
->>> steps_final = 300000
 >>> d = 2.0
->>> s = 1.4011
+>>> s_row = [1.4011]
 >>> nblocks = 10
 ...
 >>> beta_old = beta
 >>> dbeta = 1
 >>> i = 0
 ...
->>> while abs(dbeta) > 1e-4 and i < numbbeta:
+>>> for i in range(len(s_row)):
+...     s = s_row[i]
+...     while abs(dbeta) > 1e-4 and i < numbbeta:
+...         pos_walker = np.random.uniform(-2,2,(N,3,2,2))
+...         Energy = np.zeros(shape=(steps,N))
+...         lnpsi = np.zeros(shape=(steps,N))
+...
+...         Energy, lnpsi = simulate_hydrogen_molecule_min(s, beta, steps, pos_walker,N)
+...         varE = np.var(Energy)
+...         meanEn = np.mean(Energy)
+...
+...         #print("beta = ",beta,", <E> = ", meanEn, "iteration = ", i, "dbeta(%) = ", dbeta*100)
+...
+...         meanlnpsi = np.mean(lnpsi)
+...         meanEtimeslnpsi = np.mean(lnpsi*Energy)
+...         dEdbeta = 2*(meanEtimeslnpsi-meanEn*meanlnpsi)
+...         beta -= 0.5*dEdbeta
+...         dbeta = (beta - beta_old)/beta_old
+...         beta_old = beta
+...         i += 1
+...
+...     #print("End result: beta = ",beta," in ", i,"iterations.")
+...
+...     Energy_final = np.zeros(shape=(steps_final,))
 ...     pos_walker = np.random.uniform(-2,2,(N,3,2,2))
-...     Energy = np.zeros(shape=(steps,N))
-...     lnpsi = np.zeros(shape=(steps,N))
+...     Energy_final = simulate_hydrogen_molecule_min(s, beta, steps_final, pos_walker, N)[0]
 ...
-...     Energy, lnpsi = simulate_hydrogen_molecule_min(s, beta, steps, pos_walker,N)
-...     #meanEnNew = np.mean(Energy)
-...     varE = np.var(Energy)
-...     meanEn = np.mean(Energy)
-...     #diffmeanEn = np.absolute(meanEnNew - meanEn)/abs(meanEn)
-...     #meanEn = meanEnNew
-...     print("beta = ",beta,", <E> = ", meanEn, "iteration = ", i, "dbeta(%) = ", dbeta*100)
+...     Energy_truncated = Energy_final[7000:,:]
+...     varE_final = np.var(Energy_truncated)
+...     mean_error_calculated = Error(Energy_truncated,nblocks)[0]
+...     std_error_calculated = Error(Energy_truncated,nblocks)[1]
 ...
-...     meanlnpsi = np.mean(lnpsi)
-...     meanEtimeslnpsi = np.mean(lnpsi*Energy)
-...     dEdbeta = 2*(meanEtimeslnpsi-meanEn*meanlnpsi)
-...     #beta -= ((i+1)**(-zeta))*dEdbeta
-...     beta -= 0.5*dEdbeta
-...     dbeta = (beta - beta_old)/beta_old
-...     beta_old = beta
-...     i += 1
+...     print("mean with error function: ", mean_error_calculated, "and error: ", std_error_calculated)
+mean with error function:  -1.15094264375 and error:  0.000230339655967
+```
+
+```python
+>>> rslt = view.pull('beta', targets = c.ids)
+>>> beta = np.mean(rslt.get())
+>>> print(beta)
+0.578855402233
+```
+
+```python
+>>> %%px
+... N = 100
+... steps_final = 300000
 ...
->>> print("End result: beta = ",beta," in ", i,"iterations.")
+... Energy_final = np.zeros(shape=(steps_final,))
+... pos_walker = np.random.uniform(-2,2,(N,3,2,2))
+... Energy_final = simulate_hydrogen_molecule_min(s, beta, steps_final, pos_walker, N)[0]
+```
+
+```python
+>>> rslt = view.pull('Energy_final', targets=c.ids)
+>>> Energy_final = np.transpose(np.asarray(rslt.get()),axes=[1,0,2]).reshape(300000,-1)
+>>> print(Energy_final.shape)
 ...
->>> Energy_final = np.zeros(shape=(steps_final,))
->>> pos_walker = np.random.uniform(-2,2,(N,3,2,2))
->>> Energy_final = simulate_hydrogen_molecule_min(s, beta, steps_final, pos_walker, N)[0]
 >>> Energy_truncated = Energy_final[7000:,:]
 >>> varE_final = np.var(Energy_truncated)
 >>> mean_error_calculated = Error(Energy_truncated,nblocks)[0]
@@ -420,6 +415,8 @@ True
 ...
 ...
 >>> print("mean with error function: ", mean_error_calculated, "and error: ", std_error_calculated)
+(300000, 400)
+mean with error function:  -1.15092518475 and error:  5.7517652745e-05
 ```
 
 ```python
