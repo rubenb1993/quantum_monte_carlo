@@ -3,6 +3,7 @@
 >>> c = ipp.Client()
 >>> view = c[0:3]
 >>> print(c.ids)
+[0, 1, 2, 3]
 ```
 
 ```python
@@ -24,15 +25,15 @@
 >>> def Error(datavector, nblocks):
 ...     # Divide the datavector in nblocks and calculate the average value for each block
 ...     datavector1 = datavector[0:len(datavector) - len(datavector)%nblocks,:]
-...     data_block = np.reshape(datavector1,(nblocks,-1))
+...     data_block = np.reshape(datavector1,(-1,N,nblocks))
 ...     # Used to data block specific heat
-...     blockmean = np.mean(data_block,axis=1)
-...     blockstd = np.std(data_block,axis=1)
+...     blockmean = np.mean(data_block,axis=(0,1))
+...     blockstd = np.std(data_block,axis=(0,1))
 ...     # Calculate <A> en <A^2>
 ...     Mean = np.mean(blockmean)
 ...     # Standard deviation
 ...     std = np.std(blockmean)/np.sqrt(nblocks)
-...     return Mean, std, blockmean, blockstd
+...     return Mean, std
 ```
 
 ```python
@@ -60,10 +61,6 @@
 ...
 ... def apply_mask(mat, mask):
 ...     return mat[..., 1] * mask + mat[..., 0] * ~mask
-```
-
-```python
-
 ```
 
 ```python
@@ -420,15 +417,18 @@
 
 ## Hydrogen Molecule
 
+```python
+
+```
+
 ---
 scrolled: true
 ...
 
 ```python
->>> numbbeta = 1
+>>> numbbeta = 200
 >>> beta = 0.55
->>> zeta = 0.51
->>> N = 400
+>>> N = 4000
 >>> steps = 1000
 >>> steps_final = 30000
 >>> d = 2.0
@@ -439,9 +439,11 @@ scrolled: true
 >>> dbeta = 1
 >>> i = 0
 ...
+...
+...
 >>> for j in range(len(s_row)):
 ...     s = s_row[j]
-...     while abs(dbeta) > 1e-4 and i < numbbeta:
+...     while abs(dbeta) > 5e-5 and i < numbbeta:
 ...         pos_walker = np.random.uniform(-2,2,(N,3,2,2))
 ...         Energy = np.zeros(shape=(steps,N))
 ...         lnpsi = np.zeros(shape=(steps,N))
