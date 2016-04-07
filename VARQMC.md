@@ -1,13 +1,29 @@
 ```python
+>>> import ipyparallel as ipp
+>>> c = ipp.Client()
+>>> view = c[0:3]
+>>> print(c.ids)
+[0, 1, 2, 3]
+```
+
+```python
+>>> %%px
+... import matplotlib.pyplot as plt
+... import numpy as np
+... from scipy.optimize import fsolve
+... %matplotlib inline
+```
+
+```python
 >>> import matplotlib.pyplot as plt
 >>> import numpy as np
 >>> from scipy.optimize import fsolve
-...
 >>> %matplotlib inline
 ```
 
 ```python
->>> def Error(datavector, nblocks):
+>>> %%px
+... def Error(datavector, nblocks):
 ...
 ...     # Divide the datavector in nblocks and calculate the average value for each block
 ...     datavector1 = datavector[0:len(datavector) - len(datavector)%nblocks,:]
@@ -23,25 +39,31 @@
 ```
 
 ```python
->>> def f(a):
+>>> %%px
+... def f(a):
 ...     """Coulomb cusp condition analytical expression"""
 ...     return (1/(1 + np.exp(-s/a)) - a)
 ```
 
 ```python
->>> def normalize(vec):
+>>> %%px
+... def normalize(vec):
 ...     absvec = np.linalg.norm(vec, axis=0)
 ...     return absvec, vec/absvec
 ```
 
 ```python
->>> def apply_mask(mat, mask):
+>>> %%px
+... def apply_mask(mat, mask):
 ...     return mat[..., 1] * mask + mat[..., 0] * ~mask
 ```
 
 ```python
->>> def simulate_harmonic_min(alpha,steps,x):
+>>> %%px
+... def simulate_harmonic_min(alpha,steps,x):
 ...     "A variational monte carlo method for a harmonic oscilator"
+...     Energy = np.zeros(shape=(steps,N))
+...     lnpsi = np.zeros(shape=(steps,N))
 ...     for j in range(steps):
 ...         x_new = x + (np.random.rand(len(x)) - 0.5)*d
 ...         p = (np.exp(-alpha*x_new*x_new) / np.exp(-alpha*x*x))**2
@@ -112,6 +134,8 @@
 ```
 
 ```python
+
+>>> %%px
 >>> def simulate_hydrogen_molecule_min(s,beta,steps,pos_walker,N):
 ...     a = fsolve(f,0.1)
 ...     Energy = np.zeros(shape=(steps,N))
@@ -174,36 +198,79 @@
 ## 1D harmonic oscilator
 
 ```python
->>> #%%timeit
-... numbalpha = 20
->>> alpha = 1.2
->>> beta = 0.6
->>> N = 400
->>> steps = 30000
->>> d = 0.05 #movement size
->>> diffmeanEn = 10
->>> meanEn = 0
->>> i = 0
+>>> %%px
+... numbalpha = 1
+... alpha = 1.2
+... beta = 0.6
+... N = 400
+... steps = 4000
+... steps_final = 30000
+... wastesteps = 4000
+... d = 0.05 #movement size
+... diffmeanEn = 10
+... meanEn = 0
+... i = 0
 ...
->>> while diffmeanEn > 0.0001 and i < numbalpha:
+... while diffmeanEn > 0.0001 and i < numbalpha:
 ...     x = np.random.uniform(-1,1,(N))
-...     Energy = np.zeros(shape=(steps,N))
-...     lnpsi = np.zeros(shape=(steps,N))
 ...     Energy, lnpsi = simulate_harmonic_min(alpha,steps,x)
-...
-...     meanEnNew = np.mean(Energy[4000:,:])
-...     varE = np.var(Energy[4000:,:])
+...     meanEnNew = np.mean(Energy)
+...     varE = np.var(Energy)
 ...     diffmeanEn = np.absolute(meanEnNew - meanEn)
 ...     meanEn = meanEnNew
 ...     print("alpha = ",alpha,", <E> = ", meanEn, "var(E) = ", varE)
 ...
-...     meanlnpsi = np.mean(lnpsi[4000:,:])
-...     meanEtimeslnpsi = np.mean(lnpsi[4000:,:]*Energy[4000:,:])
+...     meanlnpsi = np.mean(lnpsi)
+...     meanEtimeslnpsi = np.mean(lnpsi*Energy)
 ...     dEdalpha = 2*(meanEtimeslnpsi-meanEn*meanlnpsi)
-...     alpha -= ((i+1)**(-beta))*dEdalpha
+...     #alpha -= ((i+1)**(-beta))*dEdalpha
+...     alpha -= 0.8 * dEdalpha
 ...     i += 1
 ...
->>> print("End result: alpha = ",alpha,", <E> = ", meanEn, 'var(E) = ', varE)
+... print("End result: alpha = ",alpha,", <E> = ", meanEn, 'var(E) = ', varE)
+[stdout:0]
+alpha =  1.2 , <E> =  0.614648468698 var(E) =  0.594718492175
+End result: alpha =  0.800189248958 , <E> =  0.614648468698 var(E) =  0.594718492175
+[stdout:1]
+alpha =  1.2 , <E> =  0.643260454863 var(E) =  0.522643973296
+End result: alpha =  0.848642707028 , <E> =  0.643260454863 var(E) =  0.522643973296
+[stdout:2]
+alpha =  1.2 , <E> =  0.606753363554 var( E) =  0.652208540995
+End result: alpha =  0.761540476642 , <E> =  0.606753363554 var(E) =  0.652208540995
+[stdout:3]
+alpha =  1.2 , <E> =  0.582283316391 var(E) =  0.658176481734
+End result: alpha =  0.757528415641 , <E> =  0.582283316391 var(E) =  0.658176481734
+```
+
+```python
+>>> rslt = view.pull('alpha', targets=[0,1,2,3])
+>>> alpha = np.mean(rslt.get())
+>>> print(alpha)
+0.791975212067
+```
+
+```python
+>>> %%px
+... Energy_final = np.zeros(shape=(steps_final,))
+... X = np.random.uniform(-2,2,N)
+... Energy_final = simulate_harmonic_min(alpha,steps_final,X)[0]
+```
+
+```python
+>>> rslt = view.pull('Energy_final', targets=[0,1,2,3])
+>>> Energy_final = np.transpose(np.asarray(rslt.get()),axes=[1,0,2]).reshape(30000,-1)
+>>> print(Energy_final.shape)
+...
+>>> varE_final = np.var(Energy_final[4000:,:])
+>>> mean_final = np.mean(Energy_final[4000:,:])
+(30000, 1600)
+```
+
+```python
+>>> rslt = view.pull('Energy_final', targets=0)
+>>> Energy_final1 = rslt.get()
+>>> print(np.array_equal(Energy_final1[:,0],Energy_final[:,0]))
+True
 ```
 
 ## Hydrogen Atom
