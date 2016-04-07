@@ -435,16 +435,14 @@ scrolled: true
 
 ```python
 >>> nu = time.time()
->>> numbbeta = 200
+>>> numbbeta = 150
 >>> steps = 1000
->>> steps_final = 107000
+>>> steps_final = 1007000
 >>> d = 2.0
->>> s_row = [1,2]
+>>> s_row = np.append(np.linspace(1,2,11),1.4011)
 >>> nblocks = 10
 ...
->>> graph_energy = np.zeros(shape=(len(s_row),))
->>> graph_error = np.zeros(shape=(len(s_row),))
->>> graph_beta = np.zeros(shape=(len(s_row),))
+>>> energy_graph_data = np.zeros(shape=(len(s_row),3))
 ...
 >>> for j in range(len(s_row)):
 ...     s = s_row[j]
@@ -476,7 +474,7 @@ scrolled: true
 ...     #give necessary parameters to the engines. This increases the amount of walkers 4-fold
 ...     view.push(dict(beta = beta, s = s, j = j, d = d, N = int(N/len(c.ids)), steps_final = steps_final), targets = c.ids)
 ...
-...     print("End result: beta = ",beta," in ", i,"iterations.")
+...     #print("End result: beta = ",beta," in ", i,"iterations.")
 ...
 ...     #Parallel computing the energy
 ...     %px Energy_final = np.zeros(shape=(steps_final,))
@@ -494,15 +492,12 @@ scrolled: true
 ...     mean_energy = Error(Energy_truncated,nblocks)[0]
 ...     std_error = Error(Energy_truncated,nblocks)[1]
 ...
-...     graph_energy[j] = mean_energy
-...     graph_error[j] = std_error
-...     graph_beta[j] = beta
-...     print("mean with error function: ", mean_error_calculated, "and error: ", std_error_calculated)
+...     energy_graph_data[j,0] = mean_energy
+...     energy_graph_data[j,1] = std_error
+...     energy_graph_data[j,2] = beta
+...     np.save('energy_graph_data', energy_graph_data)
+...     #print("mean with error function: ", mean_energy, "and error: ", std_error)
 ...
 >>> straks = time.time()
 >>> print("Time elapsed: ", straks-nu, "s")
-```
-
-```python
->>> %px print(beta)
 ```
