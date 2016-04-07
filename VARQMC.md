@@ -1,9 +1,13 @@
 ```python
+>>> # install ipyparallel
+... # ipcluster start -n 4       to start your engines!
+```
+
+```python
 >>> import ipyparallel as ipp
 >>> c = ipp.Client()
 >>> view = c[0:3]
 >>> print(c.ids)
-[0, 1, 2, 3]
 ```
 
 ```python
@@ -17,6 +21,7 @@
 ```python
 >>> import matplotlib.pyplot as plt
 >>> import numpy as np
+>>> import time
 >>> from scipy.optimize import fsolve
 >>> %matplotlib inline
 ```
@@ -418,7 +423,10 @@
 ## Hydrogen Molecule
 
 ```python
-
+>>> nu = time.time()
+>>> time.sleep(5)
+>>> straks = time.time()
+>>> print(straks-nu)
 ```
 
 ---
@@ -426,23 +434,25 @@ scrolled: true
 ...
 
 ```python
+>>> nu = time.time()
 >>> numbbeta = 200
->>> beta = 0.55
->>> N = 4000
 >>> steps = 1000
->>> steps_final = 30000
+>>> steps_final = 107000
 >>> d = 2.0
->>> s_row = [1.4011]
+>>> s_row = [1,2]
 >>> nblocks = 10
 ...
->>> beta_old = beta
->>> dbeta = 1
->>> i = 0
-...
-...
+>>> graph_energy = np.zeros(shape=(len(s_row),))
+>>> graph_error = np.zeros(shape=(len(s_row),))
+>>> graph_beta = np.zeros(shape=(len(s_row),))
 ...
 >>> for j in range(len(s_row)):
 ...     s = s_row[j]
+...     N = 400 #amount of walkers used for minimizing
+...     beta = 0.55
+...     beta_old = beta
+...     dbeta = 1
+...     i = 0
 ...     while abs(dbeta) > 5e-5 and i < numbbeta:
 ...         pos_walker = np.random.uniform(-2,2,(N,3,2,2))
 ...         Energy = np.zeros(shape=(steps,N))
@@ -462,7 +472,8 @@ scrolled: true
 ...         beta_old = beta
 ...         i += 1
 ...
-...     #give necessary parameters to the engines
+...     N = 4000 #total amount of walkers in parallel computing
+...     #give necessary parameters to the engines. This increases the amount of walkers 4-fold
 ...     view.push(dict(beta = beta, s = s, j = j, d = d, N = int(N/len(c.ids)), steps_final = steps_final), targets = c.ids)
 ...
 ...     print("End result: beta = ",beta," in ", i,"iterations.")
@@ -480,8 +491,18 @@ scrolled: true
 ...     #Calculate final Energy using the error function
 ...     Energy_truncated = Energy_final[7000:,:]
 ...     varE_final = np.var(Energy_truncated)
-...     mean_error_calculated = Error(Energy_truncated,nblocks)[0]
-...     std_error_calculated = Error(Energy_truncated,nblocks)[1]
+...     mean_energy = Error(Energy_truncated,nblocks)[0]
+...     std_error = Error(Energy_truncated,nblocks)[1]
 ...
+...     graph_energy[j] = mean_energy
+...     graph_error[j] = std_error
+...     graph_beta[j] = beta
 ...     print("mean with error function: ", mean_error_calculated, "and error: ", std_error_calculated)
+...
+>>> straks = time.time()
+>>> print("Time elapsed: ", straks-nu, "s")
+```
+
+```python
+>>> %px print(beta)
 ```
