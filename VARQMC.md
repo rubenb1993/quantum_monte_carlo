@@ -1,4 +1,20 @@
 ```python
+>>> import ipyparallel as ipp
+>>> c = ipp.Client()
+>>> view = c[0:3]
+>>> print(c.ids)
+[0, 1, 2, 3]
+```
+
+```python
+>>> %%px
+... import matplotlib.pyplot as plt
+... import numpy as np
+... from scipy.optimize import fsolve
+... %matplotlib inline
+```
+
+```python
 >>> import matplotlib.pyplot as plt
 >>> import numpy as np
 >>> from scipy.optimize import fsolve
@@ -114,6 +130,67 @@
 
 ```python
 >>> def simulate_hydrogen_molecule_min(s,beta,steps,pos_walker,N):
+...     a = fsolve(f,0.1)
+...     Energy = np.zeros(shape=(steps,N))
+...     lnpsi = np.zeros(shape=(steps,N))
+...     for j in range(steps):
+...         #Variational Monte Carlo step
+...         pos_walker[...,1] = pos_walker[...,0] + (np.random.rand(N,3,2) - 0.5)*d
+...         offset_array = np.append(s/2*np.ones([N,1,2,2]),np.zeros([N,2,2,2]), axis=1)
+...         left_right_array = np.append(pos_walker + offset_array, pos_walker - offset_array, axis=2)
+...         phi_1L, phi_2L, phi_1R, phi_2R = np.transpose(np.exp(np.linalg.norm(left_right_array,axis=1)/-a), axes=[1, 0, 2])
+...         phi_1 = phi_1L + phi_1R
+...         phi_2 = phi_2L + phi_2R
+...         r_12 = -np.diff(pos_walker, axis=2)
+...         r_12_abs = np.linalg.norm(r_12, axis=1)
+...         psi_jastrow = np.squeeze(np.exp(r_12_abs/(2*(1+beta*r_12_abs))))
+...         psi = phi_1*phi_2*psi_jastrow
+...         p = (psi[:,1]/psi[:,0]) ** 2
+...
+...         #Create masks for different quantities going through
+...         mask = p > np.random.rand(N)
+...         mask_walker = np.tile(mask,(2,3,1)).T
+...         mask_left_right = np.tile(mask,(4,3,1)).T
+...         mask_r_abs = np.tile(mask,(1,1)).T
+...         mask_r_12 = np.tile(mask,(1,3,1)).T
+...
+...
+...         #Create accepted quantities for energy calculation
+...         pos_walker[...,0] = apply_mask(pos_walker, mask_walker)
+...         r_1L, r_2L, r_1R, r_2R = apply_mask(left_right_array, mask_left_right).T
+...         phi_1L = apply_mask(phi_1L, mask).T
+...         phi_2L = apply_mask(phi_2L, mask).T
+...         phi_1R = apply_mask(phi_1R, mask).T
+...         phi_2R = apply_mask(phi_2R, mask).T
+...         phi_1 = phi_1L + phi_1R
+...         phi_2 = phi_2L + phi_2R
+...
+...         r_12 = np.squeeze(-np.diff(pos_walker[...,0], axis=2)).T
+...         r_12_abs, r_12_hat = normalize(r_12)
+...         r_12_abs = r_12_abs.T
+...         r_12_hat = r_12_hat
+...
+...         #normalize position vectors
+...         r_1L_abs, r_1L_hat = normalize(r_1L)
+...         r_2L_abs, r_2L_hat = normalize(r_2L)
+...         r_1R_abs, r_1R_hat = normalize(r_1R)
+...         r_2R_abs, r_2R_hat = normalize(r_2R)
+...
+...         #Calculate dot product of equation 18 of handout
+...         dot_1 = (phi_1L*r_1L_hat + phi_1R*r_1R_hat)/phi_1 - (phi_2L*r_2L_hat + phi_2R*r_2R_hat)/phi_2
+...         dot_2 = r_12_hat/(2*a*(1 + beta*r_12_abs)**2)
+...         dot_product = np.sum(dot_1*dot_2, axis=0)
+...
+...         Energy[j,:] = (-1/a**2 + (phi_1L/r_1L_abs + phi_1R/r_1R_abs)/(a*phi_1) + (phi_2L/r_2L_abs + phi_2R/r_2R_abs)/(a*phi_2) - \
+...                  1/r_1L_abs - 1/r_1R_abs - 1/r_2L_abs - 1/r_2R_abs + 1/r_12_abs - ((4*beta + 1)*r_12_abs + 4)/(4*r_12_abs*(1 + beta*r_12_abs)**4) + \
+...                 dot_product + 1/s)
+...         lnpsi[j,:] =  -r_12_abs**2/(2*(1+beta*r_12_abs)**2)
+...     return Energy, lnpsi
+```
+
+```python
+>>> %%px
+... def simulate_hydrogen_molecule_min(s,beta,steps,pos_walker,N):
 ...     a = fsolve(f,0.1)
 ...     Energy = np.zeros(shape=(steps,N))
 ...     lnpsi = np.zeros(shape=(steps,N))
@@ -337,7 +414,19 @@ True
 ## Hydrogen Molecule
 
 ```python
->>> numbbeta = 10000
+>>> %%px
+... numbbeta = 10000
+... beta = 0.55
+... zeta = 0.51
+... N = 400
+... steps = 1000
+... d = 2.0
+... s_row = [1.4011]
+... nblocks = 10
+```
+
+```python
+>>> numbbeta = 2
 >>> beta = 0.55
 >>> zeta = 0.51
 >>> N = 400
@@ -371,19 +460,31 @@ True
 ...         beta_old = beta
 ...         i += 1
 ...
-...     #print("End result: beta = ",beta," in ", i,"iterations.")
+...     view.push(dict(b = beta))
 ...
+...     #print("End result: beta = ",beta," in ", i,"iterations.")
+...     %autopx
+...     view.pull('b')
+...     steps_final = 300000
+...     N = 100
 ...     Energy_final = np.zeros(shape=(steps_final,))
 ...     pos_walker = np.random.uniform(-2,2,(N,3,2,2))
 ...     Energy_final = simulate_hydrogen_molecule_min(s, beta, steps_final, pos_walker, N)[0]
-...
+...     %autopx
+...     rslt = view.pull('Energy_final', targets=c.ids)
+...     Energy_final = np.transpose(np.asarray(rslt.get()),axes=[1,0,2]).reshape(300000,-1)
 ...     Energy_truncated = Energy_final[7000:,:]
 ...     varE_final = np.var(Energy_truncated)
 ...     mean_error_calculated = Error(Energy_truncated,nblocks)[0]
 ...     std_error_calculated = Error(Energy_truncated,nblocks)[1]
 ...
 ...     print("mean with error function: ", mean_error_calculated, "and error: ", std_error_calculated)
-mean with error function:  -1.15094264375 and error:  0.000230339655967
+%autopx enabled
+```
+
+```python
+>>> %autopx
+%autopx disabled
 ```
 
 ```python
