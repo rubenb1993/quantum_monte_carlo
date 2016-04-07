@@ -15,6 +15,13 @@
 ```
 
 ```python
+>>> import matplotlib.pyplot as plt
+>>> import numpy as np
+>>> from scipy.optimize import fsolve
+>>> %matplotlib inline
+```
+
+```python
 >>> %%px
 ... def Error(datavector, nblocks):
 ...
@@ -55,6 +62,8 @@
 >>> %%px
 ... def simulate_harmonic_min(alpha,steps,x):
 ...     "A variational monte carlo method for a harmonic oscilator"
+...     Energy = np.zeros(shape=(steps,N))
+...     lnpsi = np.zeros(shape=(steps,N))
 ...     for j in range(steps):
 ...         x_new = x + (np.random.rand(len(x)) - 0.5)*d
 ...         p = (np.exp(-alpha*x_new*x_new) / np.exp(-alpha*x*x))**2
@@ -196,7 +205,9 @@
 ... alpha = 1.2
 ... beta = 0.6
 ... N = 400
-... steps = 30000
+... steps = 4000
+... steps_final = 30000
+... wastesteps = 4000
 ... d = 0.05 #movement size
 ... diffmeanEn = 10
 ... meanEn = 0
@@ -204,24 +215,64 @@
 ...
 ... while diffmeanEn > 0.0001 and i < numbalpha:
 ...     x = np.random.uniform(-1,1,(N))
-...     Energy = np.zeros(shape=(steps,N))
-...     lnpsi = np.zeros(shape=(steps,N))
 ...     Energy, lnpsi = simulate_harmonic_min(alpha,steps,x)
-...
-...     meanEnNew = np.mean(Energy[4000:,:])
-...     varE = np.var(Energy[4000:,:])
+...     meanEnNew = np.mean(Energy)
+...     varE = np.var(Energy)
 ...     diffmeanEn = np.absolute(meanEnNew - meanEn)
 ...     meanEn = meanEnNew
 ...     print("alpha = ",alpha,", <E> = ", meanEn, "var(E) = ", varE)
 ...
-...     meanlnpsi = np.mean(lnpsi[4000:,:])
-...     meanEtimeslnpsi = np.mean(lnpsi[4000:,:]*Energy[4000:,:])
+...     meanlnpsi = np.mean(lnpsi)
+...     meanEtimeslnpsi = np.mean(lnpsi*Energy)
 ...     dEdalpha = 2*(meanEtimeslnpsi-meanEn*meanlnpsi)
-...     alpha -= ((i+1)**(-beta))*dEdalpha
+...     #alpha -= ((i+1)**(-beta))*dEdalpha
+...     alpha -= 0.8 * dEdalpha
 ...     i += 1
 ...
 ... print("End result: alpha = ",alpha,", <E> = ", meanEn, 'var(E) = ', varE)
-ERROR: Cell magic `%%px` not found.
+[stdout:0] 
+alpha =  1.2 , <E> =  0.614648468698 var(E) =  0.594718492175
+End result: alpha =  0.800189248958 , <E> =  0.614648468698 var(E) =  0.594718492175
+[stdout:1] 
+alpha =  1.2 , <E> =  0.643260454863 var(E) =  0.522643973296
+End result: alpha =  0.848642707028 , <E> =  0.643260454863 var(E) =  0.522643973296
+[stdout:2] 
+alpha =  1.2 , <E> =  0.606753363554 var(E) =  0.652208540995
+End result: alpha =  0.761540476642 , <E> =  0.606753363554 var(E) =  0.652208540995
+[stdout:3] 
+alpha =  1.2 , <E> =  0.582283316391 var(E) =  0.658176481734
+End result: alpha =  0.757528415641 , <E> =  0.582283316391 var(E) =  0.658176481734
+```
+
+```python
+>>> rslt = view.pull('alpha', targets=[0,1,2,3])
+>>> alpha = np.mean(rslt.get())
+>>> print(alpha)
+0.791975212067
+```
+
+```python
+>>> %%px
+... Energy_final = np.zeros(shape=(steps_final,))
+... X = np.random.uniform(-2,2,N)
+... Energy_final = simulate_harmonic_min(alpha,steps_final,X)[0]
+```
+
+```python
+>>> rslt = view.pull('Energy_final', targets=[0,1,2,3])
+>>> Energy_final = np.transpose(np.asarray(rslt.get()),axes=[1,0,2]).reshape(30000,-1)
+>>> print(Energy_final.shape)
+...
+>>> varE_final = np.var(Energy_final[4000:,:])
+>>> mean_final = np.mean(Energy_final[4000:,:])
+(30000, 1600)
+```
+
+```python
+>>> rslt = view.pull('Energy_final', targets=0)
+>>> Energy_final1 = rslt.get()
+>>> print(np.array_equal(Energy_final1[:,0],Energy_final[:,0]))
+True
 ```
 
 ## Hydrogen Atom
@@ -339,18 +390,6 @@ ERROR: Cell magic `%%px` not found.
 ...     i += 1
 ...
 ... print("End result: beta = ",beta,", <E> = ", meanEn, "var(E) = ", varE)
-[stdout:0] 
-beta =  0.6 , <E> =  -1.09602691195 var(E) =  0.0544064894668
-End result: beta =  0.594694089837 , <E> =  -1.09602691195 var(E) =  0.0544064894668
-[stdout:1] 
-beta =  0.6 , <E> =  -1.0962037265 var(E) =  0.0543549718794
-End result: beta =  0.594739369432 , <E> =  -1.0962037265 var(E) =  0.0543549718794
-[stdout:2] 
-beta =  0.6 , <E> =  -1.09604712489 var(E) =  0.0542521519642
-End result: beta =  0.594714922587 , <E> =  -1.09604712489 var(E) =  0.0542521519642
-[stdout:3] 
-beta =  0.6 , <E> =  -1.09592087224 var(E) =  0.0543328222425
-End result: beta =  0.594642540267 , <E> =  -1.09592087224 var(E) =  0.0543328222425
 ```
 
 ```python
@@ -389,8 +428,6 @@ End result: beta =  0.594642540267 , <E> =  -1.09592087224 var(E) =  0.054332822
 ...     i += 1
 ...
 ... print("End result: beta = ",beta,", <E> = ", meanEn, "var(E) = ", varE)
-beta =  0.6 , <E> =  -1.09604552022 var(E) =  0.0543708511256
-End result: beta =  0.594686035214 , <E> =  -1.09604552022 var(E) =  0.0543708511256
 ```
 
 ```python
