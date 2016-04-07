@@ -3,7 +3,6 @@
 >>> c = ipp.Client()
 >>> view = c[0:3]
 >>> print(c.ids)
-[0, 1, 2, 3]
 ```
 
 ```python
@@ -23,7 +22,6 @@
 
 ```python
 >>> def Error(datavector, nblocks):
-...
 ...     # Divide the datavector in nblocks and calculate the average value for each block
 ...     datavector1 = datavector[0:len(datavector) - len(datavector)%nblocks,:]
 ...     data_block = np.reshape(datavector1,(nblocks,-1))
@@ -41,17 +39,31 @@
 >>> def f(a):
 ...     """Coulomb cusp condition analytical expression"""
 ...     return (1/(1 + np.exp(-s/a)) - a)
-```
-
-```python
+...
 >>> def normalize(vec):
 ...     absvec = np.linalg.norm(vec, axis=0)
 ...     return absvec, vec/absvec
+...
+>>> def apply_mask(mat, mask):
+...     return mat[..., 1] * mask + mat[..., 0] * ~mask
 ```
 
 ```python
->>> def apply_mask(mat, mask):
+>>> %%px
+... def f(a):
+...     """Coulomb cusp condition analytical expression"""
+...     return (1/(1 + np.exp(-s/a)) - a)
+...
+... def normalize(vec):
+...     absvec = np.linalg.norm(vec, axis=0)
+...     return absvec, vec/absvec
+...
+... def apply_mask(mat, mask):
 ...     return mat[..., 1] * mask + mat[..., 0] * ~mask
+```
+
+```python
+
 ```
 
 ```python
@@ -281,15 +293,12 @@
 ...     i += 1
 ...
 >>> print("End result: alpha = ",alpha,", <E> = ", meanEn, 'var(E) = ', varE)
-alpha =  1.2 , <E> =  0.598634277305 var(E) =  0.637661911352
-End result: alpha =  0.771319723461 , <E> =  0.598634277305 var(E) =  0.637661911352
 ```
 
 ```python
 >>> rslt = view.pull('alpha', targets=[0,1,2,3])
 >>> alpha = np.mean(rslt.get())
 >>> print(alpha)
-0.816064323819
 ```
 
 ```python
@@ -305,14 +314,12 @@ End result: alpha =  0.771319723461 , <E> =  0.598634277305 var(E) =  0.63766191
 ... #print(Energy_final.shape)
 ... varE_final = np.var(Energy_final[4000:,:])
 >>> mean_final = np.mean(Energy_final[4000:,:])
-(30000, 1600)
 ```
 
 ```python
 >>> rslt = view.pull('Energy_final', targets=1)
 >>> Energy_final1 = rslt.get()
 >>> print(np.array_equal(Energy_final1[:,0],Energy_final[:,400]))
-True
 ```
 
 ## Hydrogen Atom
@@ -413,24 +420,17 @@ True
 
 ## Hydrogen Molecule
 
-```python
->>> %%px
-... numbbeta = 10000
-... beta = 0.55
-... zeta = 0.51
-... N = 400
-... steps = 1000
-... d = 2.0
-... s_row = [1.4011]
-... nblocks = 10
-```
+---
+scrolled: true
+...
 
 ```python
->>> numbbeta = 2
+>>> numbbeta = 1
 >>> beta = 0.55
 >>> zeta = 0.51
 >>> N = 400
 >>> steps = 1000
+>>> steps_final = 30000
 >>> d = 2.0
 >>> s_row = [1.4011]
 >>> nblocks = 10
@@ -439,14 +439,14 @@ True
 >>> dbeta = 1
 >>> i = 0
 ...
->>> for i in range(len(s_row)):
-...     s = s_row[i]
+>>> for j in range(len(s_row)):
+...     s = s_row[j]
 ...     while abs(dbeta) > 1e-4 and i < numbbeta:
 ...         pos_walker = np.random.uniform(-2,2,(N,3,2,2))
 ...         Energy = np.zeros(shape=(steps,N))
 ...         lnpsi = np.zeros(shape=(steps,N))
 ...
-...         Energy, lnpsi = simulate_hydrogen_molecule_min(s, beta, steps, pos_walker,N)
+...         Energy, lnpsi = simulate_hydrogen_molecule_min(s_row[j], beta, steps, pos_walker,N)
 ...         varE = np.var(Energy)
 ...         meanEn = np.mean(Energy)
 ...
@@ -460,66 +460,26 @@ True
 ...         beta_old = beta
 ...         i += 1
 ...
-...     view.push(dict(b = beta))
+...     #give necessary parameters to the engines
+...     view.push(dict(beta = beta, s = s, j = j, d = d, N = int(N/len(c.ids)), steps_final = steps_final), targets = c.ids)
 ...
-...     #print("End result: beta = ",beta," in ", i,"iterations.")
-...     %autopx
-...     view.pull('b')
-...     steps_final = 300000
-...     N = 100
-...     Energy_final = np.zeros(shape=(steps_final,))
-...     pos_walker = np.random.uniform(-2,2,(N,3,2,2))
-...     Energy_final = simulate_hydrogen_molecule_min(s, beta, steps_final, pos_walker, N)[0]
-...     %autopx
+...     print("End result: beta = ",beta," in ", i,"iterations.")
+...
+...     #Parallel computing the energy
+...     %px Energy_final = np.zeros(shape=(steps_final,))
+...     %px pos_walker = np.random.uniform(-2,2,(N,3,2,2))
+...     %px Energy_final = simulate_hydrogen_molecule_min(s, beta, steps_final, pos_walker, N)[0]
+...     #End Parallel computing
+...
+...     #Gather and reshape the energy from the parallel engines
 ...     rslt = view.pull('Energy_final', targets=c.ids)
-...     Energy_final = np.transpose(np.asarray(rslt.get()),axes=[1,0,2]).reshape(300000,-1)
+...     Energy_final = np.transpose(np.asarray(rslt.get()),axes=[1,0,2]).reshape(steps_final,-1)
+...
+...     #Calculate final Energy using the error function
 ...     Energy_truncated = Energy_final[7000:,:]
 ...     varE_final = np.var(Energy_truncated)
 ...     mean_error_calculated = Error(Energy_truncated,nblocks)[0]
 ...     std_error_calculated = Error(Energy_truncated,nblocks)[1]
 ...
 ...     print("mean with error function: ", mean_error_calculated, "and error: ", std_error_calculated)
-%autopx enabled
-```
-
-```python
->>> %autopx
-%autopx disabled
-```
-
-```python
->>> rslt = view.pull('beta', targets = c.ids)
->>> beta = np.mean(rslt.get())
->>> print(beta)
-0.578855402233
-```
-
-```python
->>> %%px
-... N = 100
-... steps_final = 300000
-...
-... Energy_final = np.zeros(shape=(steps_final,))
-... pos_walker = np.random.uniform(-2,2,(N,3,2,2))
-... Energy_final = simulate_hydrogen_molecule_min(s, beta, steps_final, pos_walker, N)[0]
-```
-
-```python
->>> rslt = view.pull('Energy_final', targets=c.ids)
->>> Energy_final = np.transpose(np.asarray(rslt.get()),axes=[1,0,2]).reshape(300000,-1)
->>> print(Energy_final.shape)
-...
->>> Energy_truncated = Energy_final[7000:,:]
->>> varE_final = np.var(Energy_truncated)
->>> mean_error_calculated = Error(Energy_truncated,nblocks)[0]
->>> std_error_calculated = Error(Energy_truncated,nblocks)[1]
-...
-...
->>> print("mean with error function: ", mean_error_calculated, "and error: ", std_error_calculated)
-(300000, 400)
-mean with error function:  -1.15092518475 and error:  5.7517652745e-05
-```
-
-```python
-
 ```
