@@ -351,7 +351,6 @@
 ...
 >>> Energy_harmonic, error_harmonic = Error(Energy_final, error_blocks)
 >>> print("<E> = ", Energy_harmonic, "with error ", error_harmonic)
-<E> =  0.500000376588 with error  7.90146672685e-08
 ```
 
 ```python
@@ -426,8 +425,6 @@
 >>> mean_hydrogen_atom, error_hydrogen_atom  = Error(Energy_truncated,error_blocks)
 ...
 >>> print("<E> = ", mean_hydrogen_atom, "with error: ", error_hydrogen_atom)
-End result: alpha =  0.999988067467 iteration # =  97
-<E> =  -0.499999962883 with error:  2.95589801379e-08
 ```
 
 ## Helium Atom
@@ -482,8 +479,6 @@ End result: alpha =  0.999988067467 iteration # =  97
 ... #mean_final = np.mean(Energy_final[4000:,:])
 ...
 ... print("Final Energy at alpha(",alpha,") =", helium_energy, ", with error = ", helium_error, "and variance ", helium_variance)
-End result: alpha =  0.133617817209 in  200 iterations
-Final Energy at alpha( 0.133617817209 ) = -2.87851738456 , with error =  0.000406961390596 and variance  0.118106051958
 ```
 
 ## Hydrogen Molecule
@@ -503,6 +498,7 @@ scrolled: true
 >>> nu = time.time()
 >>> numbbeta = 150
 >>> steps = 1000
+>>> gamma = 0.5
 >>> steps_final = 800000
 >>> d = 2.0
 >>> s_row = np.append(np.linspace(1,2,11),1.4011)
@@ -534,7 +530,7 @@ scrolled: true
 ...         meanlnpsi = np.mean(lnpsi)
 ...         meanEtimeslnpsi = np.mean(lnpsi*Energy)
 ...         dEdbeta = 2*(meanEtimeslnpsi-meanEn*meanlnpsi)
-...         beta -= 0.5*dEdbeta
+...         beta -= gamma*dEdbeta
 ...         dbeta = (beta - beta_old)/beta_old
 ...         beta_old = beta
 ...         i += 1
@@ -557,13 +553,14 @@ scrolled: true
 ...     #Calculate final Energy using the error function
 ...     Energy_truncated = Energy_final[wastesteps:,:]
 ...     varE_final = np.var(Energy_truncated)
-...     hydrogen_mol_energy, hydrogen_mol_error = Error(Energy_truncated,error_blokcs)
+...     hydrogen_mol_energy, hydrogen_mol_error = Error(Energy_truncated,error_blocks)
 ...
 ...     #Save data every timestep in order to not lose intermediate data when stopped.
 ...     energy_graph_data[j,0] = hydrogen_mol_energy
 ...     energy_graph_data[j,1] = hydrogen_mol_error
 ...     energy_graph_data[j,2] = beta
-...     np.save('energy_graph_data', energy_graph_data)
+...     np.save('20160408_energy_graph_data', energy_graph_data)
+...     print("Done with step", j+1, "out of ",len(s_row))
 ...     #print("mean with error function: ", mean_energy, "and error: ", std_error)
 ...
 >>> straks = time.time()
@@ -604,14 +601,26 @@ scrolled: true
 ...     #Calculate final Energy using the error function
 ...     Energy_truncated = Energy_final[wastesteps:,:]
 ...     varE_final = np.var(Energy_truncated)
-...     energy_beta_hydrogen, error_beta_hydrogen = Error(Energy_truncated,error_blocks)[0]
+...     energy_beta_hydrogen, error_beta_hydrogen = Error(Energy_truncated,error_blocks)
 ...
 ...     beta_graph_data[j,0] = energy_beta_hydrogen
 ...     beta_graph_data[j,1] = error_beta_hydrogen
 ...     beta_graph_data[j,2] = beta
 ...     np.save('beta_graph_data', beta_graph_data) #save for every value of beta to save intermediate results
+...     print("Done with step ", j+1, "out of ", len(beta_row))
 ...     #print("mean with error function: ", mean_energy, "and error: ", std_error)
 ...
 >>> straks = time.time()
 >>> print("Time elapsed: ", straks-nu, "s")
+Done with step  0 out of  10
+Done with step  1 out of  10
+Done with step  2 out of  10
+Done with step  3 out of  10
+Done with step  4 out of  10
+Done with step  5 out of  10
+Done with step  6 out of  10
+Done with step  7 out of  10
+Done with step  8 out of  10
+Done with step  9 out of  10
+Time elapsed:  7699.671926021576 s
 ```
