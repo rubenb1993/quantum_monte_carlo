@@ -437,16 +437,16 @@ scrolled: true
 >>> nu = time.time()
 >>> numbbeta = 150
 >>> steps = 1000
->>> steps_final = 1007000
+>>> steps_final = 800000
 >>> d = 2.0
 >>> s_row = np.append(np.linspace(1,2,11),1.4011)
 >>> nblocks = 10
+>>> N = 400
 ...
 >>> energy_graph_data = np.zeros(shape=(len(s_row),3))
 ...
 >>> for j in range(len(s_row)):
 ...     s = s_row[j]
-...     N = 400 #amount of walkers used for minimizing
 ...     beta = 0.55
 ...     beta_old = beta
 ...     dbeta = 1
@@ -470,7 +470,6 @@ scrolled: true
 ...         beta_old = beta
 ...         i += 1
 ...
-...     N = 4000 #total amount of walkers in parallel computing
 ...     #give necessary parameters to the engines. This increases the amount of walkers 4-fold
 ...     view.push(dict(beta = beta, s = s, j = j, d = d, N = int(N/len(c.ids)), steps_final = steps_final), targets = c.ids)
 ...
@@ -496,6 +495,52 @@ scrolled: true
 ...     energy_graph_data[j,1] = std_error
 ...     energy_graph_data[j,2] = beta
 ...     np.save('energy_graph_data', energy_graph_data)
+...     #print("mean with error function: ", mean_energy, "and error: ", std_error)
+...
+>>> straks = time.time()
+>>> print("Time elapsed: ", straks-nu, "s")
+```
+
+```python
+>>> nu = time.time()
+>>> numbbeta = 150
+>>> steps = 800000
+>>> d = 2.0
+>>> beta_row = np.linspace(0.1,1,10)
+>>> s = 1.4011 #at approximate hydrogen molecule distance
+>>> nblocks = 10
+>>> N = 400
+...
+>>> beta_graph_data = np.zeros(shape=(len(beta_row),3))
+...
+>>> for j in range(len(beta_row)):
+...     beta = beta_row[j]
+...
+...     #give necessary parameters to the engines. This increases the amount of walkers 4-fold
+...     view.push(dict(beta = beta, s = s, j = j, d = d, N = int(N/len(c.ids)), steps = steps), targets = c.ids)
+...
+...     #print("End result: beta = ",beta," in ", i,"iterations.")
+...
+...     #Parallel computing the energy
+...     %px Energy_final = np.zeros(shape=(steps,))
+...     %px pos_walker = np.random.uniform(-2,2,(N,3,2,2))
+...     %px Energy_final = simulate_hydrogen_molecule_min(s, beta, steps, pos_walker, N)[0]
+...     #End Parallel computing
+...
+...     #Gather and reshape the energy from the parallel engines
+...     rslt = view.pull('Energy_final', targets=c.ids)
+...     Energy_final = np.transpose(np.asarray(rslt.get()),axes=[1,0,2]).reshape(steps,-1)
+...
+...     #Calculate final Energy using the error function
+...     Energy_truncated = Energy_final[7000:,:]
+...     varE_final = np.var(Energy_truncated)
+...     mean_energy = Error(Energy_truncated,nblocks)[0]
+...     std_error = Error(Energy_truncated,nblocks)[1]
+...
+...     beta_graph_data[j,0] = mean_energy
+...     beta_graph_data[j,1] = std_error
+...     beta_graph_data[j,2] = beta
+...     np.save('beta_graph_data', beta_graph_data) #save for every value of beta to save intermediate results
 ...     #print("mean with error function: ", mean_energy, "and error: ", std_error)
 ...
 >>> straks = time.time()
