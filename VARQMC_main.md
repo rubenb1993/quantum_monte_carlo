@@ -1,7 +1,6 @@
 ```python
 >>> import matplotlib.pyplot as plt
 >>> import numpy as np
->>> import time
 >>> from scipy.optimize import fsolve
 >>> from matplotlib import rc
 ...
@@ -21,14 +20,10 @@
 ...     # Divide the datavector in nblocks and calculate the average value for each block
 ...     datavector1 = datavector[0:len(datavector) - len(datavector)%nblocks,:]
 ...     data_block = np.reshape(datavector1,(-1,N,nblocks))
-...     # Used to data block specific heat
 ...     blockmean = np.mean(data_block,axis=(0,1))
-...     blockstd = np.std(data_block,axis=(0,1))
-...     # Calculate <A> en <A^2>
-...     Mean = np.mean(blockmean)
-...     # Standard deviation
-...     std = np.std(blockmean)/np.sqrt(nblocks)
-...     return Mean, std
+...     mean = np.mean(blockmean)
+...     stderr = np.std(blockmean)/np.sqrt(nblocks)
+...     return mean, stderr
 ```
 
 ```python
@@ -50,50 +45,52 @@
 ```
 
 ```python
->>> def simulate_harmonic_min(alpha,steps,x,N):
+>>> def simulate_harmonic_oscillator(alpha,steps,N):
 ...     """A variational monte carlo method for a harmonic oscilator.
 ...     Requires a scalar value for alpha used in the wavefunction, the amount of steps to be taken, and an initial position
 ...     vector x (N,) big where N is the amount of walkers."""
-...     #initialize vectors
+...     x = np.random.uniform(-1,1,(N))
 ...     Energy = np.zeros(shape=(steps,N))
 ...     lnpsi = np.zeros(shape=(steps,N))
 ...     for j in range(steps):
-...         x_new = x + (np.random.rand(len(x)) - 0.5)*d #shift old values randomly
+...         x_new = x + (np.random.rand(len(x)) - 0.5)*d
 ...         p = (np.exp(-alpha*x_new*x_new) / np.exp(-alpha*x*x))**2 #calculate ratio of psi^2 for old and new
-...         m = p > np.random.rand(len(x)) #determine if step is taken or not for every walker
-...         x = x_new*m + x*~m #apply mask
-...         Energy[j,:] = alpha + x*x *(0.5 - 2*(alpha*alpha)) #determine energy in new state
+...         m = p > np.random.rand(len(x))
+...         x = apply_mask(x,m)
+...         Energy[j,:] = alpha + x*x *(0.5 - 2*(alpha*alpha))
 ...         lnpsi[j,:] = -x*x #determine the logarithm of the wavefunction for energy minimalization
 ...     return Energy, lnpsi
 ```
 
 ```python
->>> def simulate_hydrogen_atom_min(alpha,steps,x,N):
+>>> def simulate_hydrogen_atom(alpha,steps,N):
+...     x = np.random.uniform(-1,1,(N,3))
 ...     Energy = np.zeros(shape=(steps,N))
 ...     lnpsi = np.zeros(shape=(steps,N))
 ...     """a variational monte carlo method for the hydrogen atom.
 ...     Requires a scalar value for alpha used in the wavefunction, the amount of steps to be taken, an initial position
 ...     vector x (N,) and the amount of walkers N."""
 ...     for j in range(steps):
-...         x_new = x + (np.random.random_sample(np.shape(x)) - 0.5)*d #shift old values randomly
-...         p = (np.exp(-alpha*np.linalg.norm(x_new, axis=1)) / np.exp(-alpha*np.linalg.norm(x, axis=1)))**2 #calculate ratio
-...         m = (p > np.random.rand(N)).reshape(-1,1) #determine if step is taken or not for every walker
-...         x = x_new*m + x*~m #apply mask
-...         Energy[j,:] = -1/np.linalg.norm(x, axis=1) -alpha/2*(alpha - 2/np.linalg.norm(x, axis=1)) #determine energy of each walker
+...         x_new = x + (np.random.random_sample(np.shape(x)) - 0.5)*d
+...         p = (np.exp(-alpha*np.linalg.norm(x_new, axis=1)) / np.exp(-alpha*np.linalg.norm(x, axis=1)))**2
+...         m = (p > np.random.rand(N)).reshape(-1,1)
+...         x = apply_mask(x,m)
+...         Energy[j,:] = -1/np.linalg.norm(x, axis=1) -alpha/2*(alpha - 2/np.linalg.norm(x, axis=1))
 ...         lnpsi[j,:] = -np.linalg.norm(x) #determine the logarithm of the wave function to minimize energy
 ...     return Energy, lnpsi
 ```
 
 ```python
->>> def simulate_helium_vector_min(alpha,steps,X,d,N):
+>>> def simulate_helium_vector(alpha,steps,d,N):
 ...     """A variational Monte Carlo simulation for a helium atom.
 ...     Based on theory of ``Computational Physics'' by J.M. Thijssen, chapter 12.2 (2nd edition)
 ...     X is an (2N,3) matrix with particle pairs (x,y,z) position. Particles are paired with i and N+i
 ...     alpha is the trial variable for the trial wave function of the form exp(-alpha * r)
 ...     steps is the amount of steps taken by the walkers
 ...     Energy (steps, N) is the energy of each particle pair at timestep j
-...     lnpsi (steps,N) is a sclaar used to determine the minimum energy of the wavefunction.
+...     lnpsi (steps,N) is a scalar used to determine the minimum energy of the wavefunction.
 ...     """
+...     X = np.random.uniform(-2,2,(2*N,3))
 ...     Energy = np.zeros(shape=(steps,N))
 ...     lnpsi = np.zeros(shape=(steps,N))
 ...     for j in range(steps):
@@ -112,7 +109,7 @@
 ...         p = (psi_new/psi_old)**2
 ...         m = p>np.random.rand(N)
 ...         m = np.transpose(np.tile(m,(3,2))) #make from m a 400,3 matrix by repeating m
-...         X = X_new*(m) + X*~(m) #apply mask
+...         X = apply_mask(X,m)
 ...
 ...         r1r2_diff = X[0:N,:] - X[N:,:]
 ...         r1_length = np.tile(np.linalg.norm(X[0:N,:],axis=1),(3,1)).T #200,3 length vector to normalize r1
@@ -130,7 +127,7 @@
 ```
 
 ```python
->>> def simulate_hydrogen_molecule_min(s,beta,steps,pos_walker,N):
+>>> def simulate_hydrogen_molecule(s,beta,steps,N):
 ...     """A variational Monte Carlo simulation for a hydrogen molecule.
 ...     Based on theory of ``Computational Physics'' by J.M. Thijssen, chapter 12 (2nd edition)
 ...     s is the internuclear distance between the 2 protons
@@ -142,6 +139,7 @@
 ...     Energy (steps, N) is the energy of each particle pair at timestep j.
 ...     lnpsi (steps,N) is a matrix used to determine the minimum energy.
 ...     """
+...     pos_walker = np.random.uniform(-2,2,(N,3,2,2))
 ...     a = fsolve(f,0.1)
 ...     Energy = np.zeros(shape=(steps,N))
 ...     lnpsi = np.zeros(shape=(steps,N))
@@ -220,9 +218,8 @@
 >>> #optimize alpha with a steepest descent method
 ... while abs(dalpha) > 5e-5 and i < numbalpha:
 ...     #Do VQMC step with old value for alpha
-...     x = np.random.uniform(-1,1,(N))
-...     Energy, lnpsi = simulate_harmonic_min(alpha,steps,x,N)
-...     meanEnNew = np.mean(Energy)
+...     Energy, lnpsi = simulate_harmonic_oscillator(alpha,steps,N)
+...     meanEn = np.mean(Energy)
 ...     varE = np.var(Energy)
 ...     #print("alpha = ",alpha,", <E> = ", meanEn, "var(E) = ", varE)
 ...
@@ -238,17 +235,17 @@
 >>> #print("End result: alpha = ",alpha,", <E> = ", meanEn, 'var(E) = ', varE)
 ... #Determine the final energy with the optimized value for alpha
 ... Energy_final = np.zeros(shape=(steps_final,))
->>> X = np.random.uniform(-2,2,N)
->>> Energy_final = simulate_harmonic_min(alpha,steps_final,X,N)[0]
+>>> Energy_final = simulate_harmonic_oscillator(alpha,steps_final,N)[0]
 ...
 >>> Energy_harmonic, error_harmonic = Error(Energy_final, error_blocks)
 >>> print("<E> = ", Energy_harmonic, "with error ", error_harmonic)
+<E> =  0.756195031545 with error  7.88867064184e-08
 ```
 
 ## Hydrogen Atom
 
 ```python
->>> numbalpha = 300
+>>> numbalpha = 30
 >>> alpha = 0.1
 >>> N = 400
 >>> steps = 100
@@ -264,10 +261,9 @@
 >>> #Approximate the optimal value of alpha using a steepest descent method
 ... while abs(dalpha) > 1e-6 and i < numbalpha:
 ...     #Do VQMC steps for old value of alpha
-...     x = np.random.uniform(-1,1,(N,3))
 ...     Energy = np.zeros(shape=(steps,N))
 ...     lnpsi = np.zeros(shape=(steps,N))
-...     Energy, lnpsi = simulate_hydrogen_atom_min(alpha,steps,x,N)
+...     Energy, lnpsi = simulate_hydrogen_atom(alpha,steps,N)
 ...     meanEn = np.mean(Energy)
 ...     varE = np.var(Energy)
 ...
@@ -284,8 +280,7 @@
 ...
 >>> #Determine the final energy with the approximated value of alpha
 ... Energy_final = np.zeros(shape=(steps_final,N))
->>> x = np.random.uniform(-1,1,(N,3))
->>> Energy_final = simulate_hydrogen_atom_min(alpha,steps_final,x,N)[0]
+>>> Energy_final = simulate_hydrogen_atom(alpha,steps_final,N)[0]
 >>> Energy_truncated = Energy_final[equilibrium_steps:,:]
 >>> mean_hydrogen_atom, error_hydrogen_atom  = Error(Energy_truncated,error_blocks)
 ...
