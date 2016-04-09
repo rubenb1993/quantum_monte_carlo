@@ -15,16 +15,13 @@
 ```python
 >>> %%px
 ... #import libraries on parallel engines
-... import matplotlib.pyplot as plt
 ... import numpy as np
 ... from scipy.optimize import fsolve
-... %matplotlib inline
 ```
 
 ```python
 >>> import matplotlib.pyplot as plt
 >>> import numpy as np
->>> import time
 >>> from scipy.optimize import fsolve
 >>> %matplotlib inline
 ```
@@ -86,87 +83,7 @@
 ```
 
 ```python
->>> def simulate_harmonic_min(alpha,steps,x,N):
-...     """A variational monte carlo method for a harmonic oscilator.
-...     Requires a scalar value for alpha used in the wavefunction, the amount of steps to be taken, and an initial position
-...     vector x (N,) big where N is the amount of walkers."""
-...     #initialize vectors
-...     Energy = np.zeros(shape=(steps,N))
-...     lnpsi = np.zeros(shape=(steps,N))
-...     for j in range(steps):
-...         x_new = x + (np.random.rand(len(x)) - 0.5)*d #shift old values randomly
-...         p = (np.exp(-alpha*x_new*x_new) / np.exp(-alpha*x*x))**2 #calculate ratio of psi^2 for old and new
-...         m = p > np.random.rand(len(x)) #determine if step is taken or not for every walker
-...         x = x_new*m + x*~m #apply mask
-...         Energy[j,:] = alpha + x*x *(0.5 - 2*(alpha*alpha)) #determine energy in new state
-...         lnpsi[j,:] = -x*x #determine the logarithm of the wavefunction for energy minimalization
-...     return Energy, lnpsi
-```
-
-```python
->>> def simulate_hydrogen_atom_min(alpha,steps,x,N):
-...     Energy = np.zeros(shape=(steps,N))
-...     lnpsi = np.zeros(shape=(steps,N))
-...     """a variational monte carlo method for the hydrogen atom.
-...     Requires a scalar value for alpha used in the wavefunction, the amount of steps to be taken, an initial position
-...     vector x (N,) and the amount of walkers N."""
-...     for j in range(steps):
-...         x_new = x + (np.random.random_sample(np.shape(x)) - 0.5)*d #shift old values randomly
-...         p = (np.exp(-alpha*np.linalg.norm(x_new, axis=1)) / np.exp(-alpha*np.linalg.norm(x, axis=1)))**2 #calculate ratio
-...         m = (p > np.random.rand(N)).reshape(-1,1) #determine if step is taken or not for every walker
-...         x = x_new*m + x*~m #apply mask
-...         Energy[j,:] = -1/np.linalg.norm(x, axis=1) -alpha/2*(alpha - 2/np.linalg.norm(x, axis=1)) #determine energy of each walker
-...         lnpsi[j,:] = -np.linalg.norm(x) #determine the logarithm of the wave function to minimize energy
-...     return Energy, lnpsi
-```
-
-```python
->>> def simulate_helium_vector_min(alpha,steps,X,d,N):
-...     """A variational Monte Carlo simulation for a helium atom.
-...     Based on theory of ``Computational Physics'' by J.M. Thijssen, chapter 12.2 (2nd edition)
-...     X is an (2N,3) matrix with particle pairs (x,y,z) position. Particles are paired with i and N+i
-...     alpha is the trial variable for the trial wave function of the form exp(-alpha * r)
-...     steps is the amount of steps taken by the walkers
-...     Energy (steps, N) is the energy of each particle pair at timestep j
-...     lnpsi (steps,N) is a sclaar used to determine the minimum energy of the wavefunction.
-...     """
-...     Energy = np.zeros(shape=(steps,N))
-...     lnpsi = np.zeros(shape=(steps,N))
-...     for j in range(steps):
-...         X_new = X + (np.random.rand(2*N,3) - 0.5) * d
-...         r_old = np.linalg.norm(X,axis=1)
-...         r_new = np.linalg.norm(X_new,axis=1)
-...         r12_old = np.linalg.norm(X[0:N,:] - X[N:,:],axis=1)
-...         r12_new = np.linalg.norm(X_new[0:N,:] - X_new[N:,:],axis=1)
-...
-...         psi_fact_old = 1 + alpha * r12_old
-...         psi_fact_new = 1 + alpha * r12_new
-...
-...         psi_old = np.exp(-2*r_old[0:N] - 2*r_old[N:]) * np.exp(r12_old/(2*psi_fact_old))
-...         psi_new= np.exp(-2*r_new[0:N] - 2*r_new[N:]) * np.exp(r12_new/(2*psi_fact_new))
-...
-...         p = (psi_new/psi_old)**2
-...         m = p>np.random.rand(N)
-...         m = np.transpose(np.tile(m,(3,2))) #make from m a 400,3 matrix by repeating m
-...         X = X_new*(m) + X*~(m) #apply mask
-...
-...         r1r2_diff = X[0:N,:] - X[N:,:]
-...         r1_length = np.tile(np.linalg.norm(X[0:N,:],axis=1),(3,1)).T #200,3 length vector to normalize r1
-...         r2_length = np.tile(np.linalg.norm(X[N:,:],axis=1),(3,1)).T #200,3 length vector to normalize r2
-...         r1r2_diff_hat = X[0:N,:]/r1_length - X[N:,:]/r2_length
-...
-...         r12 = np.linalg.norm(X[0:N,:] - X[N:,:],axis=1)
-...         psi_fact = 1 + alpha*r12
-...
-...         dot_product = np.sum(r1r2_diff_hat * r1r2_diff,axis=1)
-...
-...         Energy[j,:] = -4 + dot_product/(r12*psi_fact**2) - 1/(r12*psi_fact**3) - 1/(4*psi_fact**4) + 1/r12
-...         lnpsi[j,:] = -2*(r12*r12)/(4*(1+alpha*r12)*(1+alpha*r12))
-...     return Energy, lnpsi
-```
-
-```python
->>> def simulate_hydrogen_molecule_min(s,beta,steps,pos_walker,N):
+>>> def simulate_hydrogen_molecule(s,beta,steps,N):
 ...     """A variational Monte Carlo simulation for a hydrogen molecule.
 ...     Based on theory of ``Computational Physics'' by J.M. Thijssen, chapter 12 (2nd edition)
 ...     s is the internuclear distance between the 2 protons
@@ -178,6 +95,7 @@
 ...     Energy (steps, N) is the energy of each particle pair at timestep j.
 ...     lnpsi (steps,N) is a matrix used to determine the minimum energy.
 ...     """
+...     pos_walker = np.random.uniform(-2,2,(N,3,2,2))
 ...     a = fsolve(f,0.1)
 ...     Energy = np.zeros(shape=(steps,N))
 ...     lnpsi = np.zeros(shape=(steps,N))
@@ -308,203 +226,22 @@
 ...     return Energy, lnpsi
 ```
 
-## 1D harmonic oscilator
-
-```python
->>> numbalpha = 100
->>> alpha = 1.2 #starting guess for alpha
->>> gamma = 0.8 #steepest descent parameter
->>> N = 400
->>> steps = 4000
->>> steps_final = 30000
->>> wastesteps = 4000
->>> d = 0.05 #movement size
->>> i = 0
->>> error_blocks = 5
-...
->>> dalpha = 1
->>> alpha_old = alpha
-...
->>> #optimize alpha with a steepest descent method
-... while abs(dalpha) > 5e-5 and i < numbalpha:
-...     #Do VQMC step with old value for alpha
-...     x = np.random.uniform(-1,1,(N))
-...     Energy, lnpsi = simulate_harmonic_min(alpha,steps,x,N)
-...     meanEnNew = np.mean(Energy)
-...     varE = np.var(Energy)
-...     #print("alpha = ",alpha,", <E> = ", meanEn, "var(E) = ", varE)
-...
-...     #determine new alpha
-...     meanlnpsi = np.mean(lnpsi)
-...     meanEtimeslnpsi = np.mean(lnpsi*Energy)
-...     dEdalpha = 2*(meanEtimeslnpsi-meanEn*meanlnpsi)
-...     alpha -= gamma * dEdalpha
-...     dalpha = (alpha-alpha_old)/alpha_old
-...     alpha_old = alpha
-...     i += 1
-...
->>> #print("End result: alpha = ",alpha,", <E> = ", meanEn, 'var(E) = ', varE)
-... #Determine the final energy with the optimized value for alpha
-... Energy_final = np.zeros(shape=(steps_final,))
->>> X = np.random.uniform(-2,2,N)
->>> Energy_final = simulate_harmonic_min(alpha,steps_final,X,N)[0]
-...
->>> Energy_harmonic, error_harmonic = Error(Energy_final, error_blocks)
->>> print("<E> = ", Energy_harmonic, "with error ", error_harmonic)
-```
-
-```python
->>> rslt = view.pull('alpha', targets=[0,1,2,3])
->>> alpha = np.mean(rslt.get())
->>> print(alpha)
-```
-
-```python
->>> %%px
-... Energy_final = np.zeros(shape=(steps_final,))
-... X = np.random.uniform(-2,2,N)
-... Energy_final = simulate_harmonic_min(alpha,steps_final,X)[0]
-```
-
-```python
->>> #rslt = view.pull('Energy_final', targets=[0,1,2,3])
-... #Energy_final = np.transpose(np.asarray(rslt.get()),axes=[1,0,2]).reshape(30000,-1)
-... #print(Energy_final.shape)
-... varE_final = np.var(Energy_final[4000:,:])
->>> mean_final = np.mean(Energy_final[4000:,:])
-```
-
-```python
->>> rslt = view.pull('Energy_final', targets=1)
->>> Energy_final1 = rslt.get()
->>> print(np.array_equal(Energy_final1[:,0],Energy_final[:,400]))
-```
-
-## Hydrogen Atom
-
-```python
->>> numbalpha = 300
->>> alpha = 0.1
->>> N = 400
->>> steps = 100
->>> steps_final = 30000
->>> d = 0.5 #movement size
->>> equilibrium_steps = 4000
->>> error_blocks = 5
-...
->>> alpha_old = alpha
->>> dalpha = 1
->>> i = 0
-...
->>> #Approximate the optimal value of alpha using a steepest descent method
-... while abs(dalpha) > 1e-6 and i < numbalpha:
-...     #Do VQMC steps for old value of alpha
-...     x = np.random.uniform(-1,1,(N,3))
-...     Energy = np.zeros(shape=(steps,N))
-...     lnpsi = np.zeros(shape=(steps,N))
-...     Energy, lnpsi = simulate_hydrogen_atom_min(alpha,steps,x,N)
-...     meanEn = np.mean(Energy)
-...     varE = np.var(Energy)
-...
-...     #Determine new value for alpha
-...     meanlnpsi = np.mean(lnpsi)
-...     meanEtimeslnpsi = np.mean(lnpsi*Energy)
-...     dEdalpha = 2*(meanEtimeslnpsi-meanEn*meanlnpsi)
-...     alpha -= 0.3*dEdalpha
-...     dalpha = (alpha-alpha_old)/alpha_old
-...     i += 1
-...     alpha_old = alpha
-...
->>> print("End result: alpha = ",alpha, 'iteration # = ', i)
-...
->>> #Determine the final energy with the approximated value of alpha
-... Energy_final = np.zeros(shape=(steps_final,N))
->>> x = np.random.uniform(-1,1,(N,3))
->>> Energy_final = simulate_hydrogen_atom_min(alpha,steps_final,x,N)[0]
->>> Energy_truncated = Energy_final[equilibrium_steps:,:]
->>> mean_hydrogen_atom, error_hydrogen_atom  = Error(Energy_truncated,error_blocks)
-...
->>> print("<E> = ", mean_hydrogen_atom, "with error: ", error_hydrogen_atom)
-```
-
-## Helium Atom
-
-```python
->>> numbalpha = 200
->>> #alpha = 0.132
-... alpha = 0.5
->>> gamma = 0.03
->>> beta = 0.6
->>> N = 400
->>> steps = 4000
->>> steps_final = 30000
->>> d = 0.3 #movement size
->>> wastesteps = 4000
->>> error_blocks = 5
-...
->>> i = 0
->>> alpha_old = alpha
->>> dalpha = 1
-...
->>> #Approximate the optimal value of alpha with a steepest descent method
-... while abs(dalpha) > 1e-4 and i < numbalpha:
-...     #Do a VQMC step with old alpha
-...     X = np.random.uniform(-2,2,(2*N,3))
-...     Energy = np.zeros(shape=(steps,N))
-...     lnpsi = np.zeros(shape=(steps,N))
-...     Energy, lnpsi = simulate_helium_vector_min(alpha,steps,X,d,N)
-...     varE = np.var(Energy)
-...     meanEn = np.mean(Energy)
-...
-...     #Determine new value of alpha
-...     meanlnpsi = np.mean(lnpsi)
-...     meanEtimeslnpsi = np.mean(lnpsi*Energy)
-...     dEdalpha = 2*(meanEtimeslnpsi-meanEn*meanlnpsi)
-...     alpha -=  gamma*dEdalpha
-...     dalpha = (alpha-alpha_old)/alpha_old
-...     i += 1
-...     alpha_old = alpha
-...
->>> print("End result: alpha = ",alpha, "in ", i, "iterations")
-...
->>> #Determine the energy with the optimized value of alpha
-... Energy_helium = np.zeros(shape=(steps_final,))
->>> X = np.random.uniform(-2,2,(2*N,3))
->>> Energy_helium = simulate_helium_vector_min(alpha,steps_final,X,d,N)[0]
->>> Energy_helium_truncated = Energy_helium[wastesteps:,:]
-...
->>> helium_energy, helium_error = Error(Energy_helium_truncated, error_blocks)
->>> helium_variance = np.var(Energy_helium_truncated)
->>> #varE_final = np.var(Energy_final[4000:,:])
-... #mean_final = np.mean(Energy_final[4000:,:])
-...
-... print("Final Energy at alpha(",alpha,") =", helium_energy, ", with error = ", helium_error, "and variance ", helium_variance)
-```
-
 ## Hydrogen Molecule
-
-```python
->>> nu = time.time()
->>> time.sleep(5)
->>> straks = time.time()
->>> print(straks-nu)
-```
 
 ---
 scrolled: true
 ...
 
 ```python
->>> nu = time.time()
 >>> numbbeta = 150
 >>> steps = 1000
 >>> gamma = 0.5
->>> steps_final = 800000
+>>> steps_final = 8000
 >>> d = 2.0
 >>> s_row = np.append(np.linspace(1,2,11),1.4011)
 >>> error_blocks = 10
 >>> N = 400
->>> wastesteps = 7000
+>>> wastesteps = 70
 ...
 >>> energy_graph_data = np.zeros(shape=(len(s_row),3))
 ...
@@ -517,10 +254,9 @@ scrolled: true
 ...     #Determine best beta with a steepest descent method
 ...     while abs(dbeta) > 5e-5 and i < numbbeta:
 ...         #Do VQMC step with old beta
-...         pos_walker = np.random.uniform(-2,2,(N,3,2,2))
 ...         Energy = np.zeros(shape=(steps,N))
 ...         lnpsi = np.zeros(shape=(steps,N))
-...         Energy, lnpsi = simulate_hydrogen_molecule_min(s_row[j], beta, steps, pos_walker,N)
+...         Energy, lnpsi = simulate_hydrogen_molecule(s_row[j], beta, steps,N)
 ...         varE = np.var(Energy)
 ...         meanEn = np.mean(Energy)
 ...
@@ -542,8 +278,7 @@ scrolled: true
 ...
 ...     #Parallel computing the energy
 ...     %px Energy_hydrogen_mol = np.zeros(shape=(steps_final,))
-...     %px pos_walker = np.random.uniform(-2,2,(N,3,2,2))
-...     %px Energy_hydrogen_mol = simulate_hydrogen_molecule_min(s, beta, steps_final, pos_walker, N)[0]
+...     %px Energy_hydrogen_mol = simulate_hydrogen_molecule(s, beta, steps_final, N)[0]
 ...     #End Parallel computing
 ...
 ...     #Gather and reshape the energy from the parallel engines
