@@ -119,7 +119,7 @@
 ...         r12 = np.linalg.norm(X[0:N, :] - X[N:, :],axis=1)
 ...         psi_fact = 1 + alpha*r12
 ...
-...         dot_product = np.sum(r1r2_diff_hat * r1r2_diff,axis=1)
+...         dot_product = np.sum(r1r2_diff_hat * r1r2_diff, axis=1)
 ...
 ...         Energy[j,:] = -4 + dot_product/(r12*psi_fact**2) - 1/(r12*psi_fact**3) - 1/(4*psi_fact**4) + 1/r12
 ...         lnpsi[j,:] = -2*(r12*r12)/(4*(1+alpha*r12)*(1+alpha*r12))
@@ -194,7 +194,7 @@
 ...         Energy[j, :] = (-1/a**2 + (phi_1L/r_1L_abs + phi_1R/r_1R_abs)/(a*phi_1) + (phi_2L/r_2L_abs + phi_2R/r_2R_abs)/(a*phi_2) - \
 ...                  1/r_1L_abs - 1/r_1R_abs - 1/r_2L_abs - 1/r_2R_abs + 1/r_12_abs - ((4*beta + 1)*r_12_abs + 4)/(4*r_12_abs*(1 + beta*r_12_abs)**4) + \
 ...                 dot_product + 1/s)
-...         lnpsi[j,:] =  -r_12_abs**2/(2*(1 + beta*r_12_abs)**2)
+...         lnpsi[j,:] =  -r_12_abs**2 / (2*(1 + beta*r_12_abs)**2)
 ...     return Energy, lnpsi
 ```
 
@@ -219,11 +219,10 @@
 ... while abs(dalpha) > 5e-5 and i < numbalpha:
 ...     #Do VQMC step with old value for alpha
 ...     Energy, lnpsi = simulate_harmonic_oscillator(alpha, steps_minimizer, N)
-...     meanEn = np.mean(Energy)
-...     varE = np.var(Energy)
 ...     #print("alpha = ",alpha,", <E> = ", meanEn, "var(E) = ", varE)
 ...
 ...     #determine new alpha
+...     meanEn = np.mean(Energy)
 ...     meanlnpsi = np.mean(lnpsi)
 ...     meanEtimeslnpsi = np.mean(lnpsi*Energy)
 ...     dEdalpha = 2*(meanEtimeslnpsi-meanEn*meanlnpsi)
@@ -236,19 +235,20 @@
 ... #Determine the final energy with the optimized value for alpha
 ... Energy_final = np.zeros(shape=(steps_final, ))
 >>> Energy_final = simulate_harmonic_oscillator(alpha, steps_final, N)[0]
+>>> Energy_truncated = Energy_final[equilibrium_steps:, :]
 ...
->>> Energy_harmonic, error_harmonic = Error(Energy_final, error_blocks)
+>>> Energy_harmonic, error_harmonic = Error(Energy_truncated, error_blocks)
 >>> print("<E> = ", Energy_harmonic, "with error ", error_harmonic)
-<E> =  0.499999974537 with error  5.97277732256e-08
 ```
 
 ## Hydrogen Atom
 
 ```python
->>> numbalpha = 30
->>> alpha = 0.1
+>>> numbalpha = 200
+>>> alpha = 0.1 #initial guess for alpha
+>>> gamma = 0.3 #steepest descent parameter
 >>> N = 400
->>> steps = 100
+>>> steps_minimizer = 100
 >>> steps_final = 30000
 >>> d = 0.5 #movement size
 >>> equilibrium_steps = 4000
@@ -261,17 +261,14 @@
 >>> #Approximate the optimal value of alpha using a steepest descent method
 ... while abs(dalpha) > 1e-6 and i < numbalpha:
 ...     #Do VQMC steps for old value of alpha
-...     Energy = np.zeros(shape=(steps, N))
-...     lnpsi = np.zeros(shape=(steps, N))
-...     Energy, lnpsi = simulate_hydrogen_atom(alpha, steps, N)
-...     meanEn = np.mean(Energy)
-...     varE = np.var(Energy)
+...     Energy, lnpsi = simulate_hydrogen_atom(alpha, steps_minimizer, N)
 ...
 ...     #Determine new value for alpha
+...     meanEn = np.mean(Energy)
 ...     meanlnpsi = np.mean(lnpsi)
 ...     meanEtimeslnpsi = np.mean(lnpsi*Energy)
 ...     dEdalpha = 2*(meanEtimeslnpsi-meanEn*meanlnpsi)
-...     alpha -= 0.3*dEdalpha
+...     alpha -= gamma*dEdalpha
 ...     dalpha = (alpha - alpha_old)/alpha_old
 ...     i += 1
 ...     alpha_old = alpha
@@ -285,8 +282,6 @@
 >>> mean_hydrogen_atom, error_hydrogen_atom  = Error(Energy_truncated, error_blocks)
 ...
 >>> print("<E> = ", mean_hydrogen_atom, "with error: ", error_hydrogen_atom)
-End result: alpha =  0.993920883666 iteration # =  30
-<E> =  -0.499971516299 with error:  1.0929431945e-05
 ```
 
 ```python
@@ -295,7 +290,7 @@ End result: alpha =  0.993920883666 iteration # =  30
 >>> std = []
 >>> nsteps = 100
 >>> x = []
->>> for i in range(nt-1):
+>>> for i in range(1,nt-1):
 ...     a=i%nsteps
 ...     if a == 0:
 ...         std1 = np.std(Energy_truncated[:i])
@@ -304,27 +299,21 @@ End result: alpha =  0.993920883666 iteration # =  30
 >>> plt.figure()
 >>> plt.plot(x[1:], std[1:])
 >>> plt.xlabel(r'block length')
->>> plt.ylabel(r'error')
-C:\Users\skros\Anaconda3\lib\site-packages\numpy\core\_methods.py:82: RuntimeWarning: Degrees of freedom <= 0 for slice
-  warnings.warn("Degrees of freedom <= 0 for slice", RuntimeWarning)
-C:\Users\skros\Anaconda3\lib\site-packages\numpy\core\_methods.py:94: RuntimeWarning: invalid value encountered in true_divide
-  arrmean, rcount, out=arrmean, casting='unsafe', subok=False)
-C:\Users\skros\Anaconda3\lib\site-packages\numpy\core\_methods.py:116: RuntimeWarning: invalid value encountered in double_scalars
-  ret = ret.dtype.type(ret / rcount)
+>>> plt.ylabel(r'$\sigma$')
 ```
 
 ## Helium Atom
 
 ```python
 >>> numbalpha = 20
->>> alpha = 0.5
->>> gamma = 0.03
+>>> alpha = 0.5 #inital guess alpha
+>>> gamma = 0.03 #steepest descent parameter
 >>> beta = 0.6
 >>> N = 400
->>> steps = 4000
+>>> steps_minimizer = 4000
 >>> steps_final = 30000
 >>> d = 0.3 #movement size
->>> wastesteps = 4000
+>>> equilibirum_steps = 4000
 >>> error_blocks = 5
 ...
 >>> i = 0
@@ -334,13 +323,10 @@ C:\Users\skros\Anaconda3\lib\site-packages\numpy\core\_methods.py:116: RuntimeWa
 >>> #Approximate the optimal value of alpha with a steepest descent method
 ... while abs(dalpha) > 1e-4 and i < numbalpha:
 ...     #Do a VQMC step with old alpha
-...     Energy = np.zeros(shape=(steps, N))
-...     lnpsi = np.zeros(shape=(steps, N))
-...     Energy, lnpsi = simulate_helium_atom(alpha, steps, d, N)
-...     varE = np.var(Energy)
-...     meanEn = np.mean(Energy)
+...     Energy, lnpsi = simulate_helium_atom(alpha, steps_minimizer, d, N)
 ...
 ...     #Determine new value of alpha
+...     meanEn = np.mean(Energy)
 ...     meanlnpsi = np.mean(lnpsi)
 ...     meanEtimeslnpsi = np.mean(lnpsi*Energy)
 ...     dEdalpha = 2*(meanEtimeslnpsi-meanEn*meanlnpsi)
@@ -354,59 +340,17 @@ C:\Users\skros\Anaconda3\lib\site-packages\numpy\core\_methods.py:116: RuntimeWa
 >>> #Determine the energy with the optimized value of alpha
 ... Energy_helium = np.zeros(shape=(steps_final, ))
 >>> Energy_helium = simulate_helium_atom(alpha, steps_final, d, N)[0]
->>> Energy_helium_truncated = Energy_helium[wastesteps:, :]
+>>> Energy_helium_truncated = Energy_helium[equilibrium_steps:, :]
 >>> helium_energy, helium_error = Error(Energy_helium_truncated, error_blocks)
->>> helium_variance = np.var(Energy_helium_truncated)
 ...
->>> print("Final Energy at alpha(",alpha,") =", helium_energy, ", with error = ", helium_error, "and variance ", helium_variance)
-End result: alpha =  0.449507948461 in  20 iterations
-Final Energy at alpha( 0.449507948461 ) = -2.85893823217 , with error =  0.000708575900182 and variance  0.0912794879072
+>>> print("Final Energy at alpha(",alpha,") =", helium_energy, ", with error = ", helium_error)
 ```
 
 ## Hydrogen Molecule
 
 ```python
->>> steps_final = 800000
->>> d = 2.0
->>> s = 1.4
->>> N = 400
->>> equilibrium_steps = 40000
->>> Energy_final = np.zeros(shape=(steps_final, ))
->>> Energy_final = simulate_hydrogen_molecule(s, beta, steps_final, N)[0]
-...
-...
->>> #Calculate final Energy using the error function
-... Energy_truncated = Energy_final[equilibrium_steps:, :]
->>> varE_final = np.var(Energy_truncated)
->>> hydrogen_mol_energy, hydrogen_mol_error = Error(Energy_truncated, error_blocks)
-```
-
-```python
->>> # Plot to determine optimal block size for data blocking
-... nt = steps_final - equilibrium_steps
->>> std = []
->>> nsteps = 100
->>> x = []
->>> for i in range(nt-1):
-...     a = i%nsteps
-...     if a == 0:
-...         std1=np.std(Energy_final[equilibrium_steps:i])
-...         std.append(std1)
-...         x.append(i)
->>> plt.figure()
->>> plt.plot(x[1:], std[1:])
->>> plt.xlabel(r'block length')
->>> plt.ylabel(r'error')
-C:\Users\skros\Anaconda3\lib\site-packages\numpy\core\_methods.py:82: RuntimeWarning: Degrees of freedom <= 0 for slice
-  warnings.warn("Degrees of freedom <= 0 for slice", RuntimeWarning)
-C:\Users\skros\Anaconda3\lib\site-packages\numpy\core\_methods.py:94: RuntimeWarning: invalid value encountered in true_divide
-  arrmean, rcount, out=arrmean, casting='unsafe', subok=False)
-C:\Users\skros\Anaconda3\lib\site-packages\numpy\core\_methods.py:116: RuntimeWarning: invalid value encountered in double_scalars
-  ret = ret.dtype.type(ret / rcount)
-```
-
-```python
->>> numbbeta = 5
+>>> #gather data for the plot energy dependent of beta
+... numbbeta = 5
 >>> steps = 1000
 >>> gamma = 0.5
 >>> steps_final = 800000
@@ -458,23 +402,45 @@ C:\Users\skros\Anaconda3\lib\site-packages\numpy\core\_methods.py:116: RuntimeWa
 ...     energy_graph_data[j,2] = beta
 ...     np.save('20160409_energy_long_corr_time_s_1_440115', energy_graph_data)
 ...     print("Done with step", j+1, "out of ",len(s_row))
-C:\Users\skros\Anaconda3\lib\site-packages\numpy\core\_methods.py:82: RuntimeWarning: Degrees of freedom <= 0 for slice
-  warnings.warn("Degrees of freedom <= 0 for slice", RuntimeWarning)
-C:\Users\skros\Anaconda3\lib\site-packages\numpy\core\_methods.py:94: RuntimeWarning: invalid value encountered in true_divide
-  arrmean, rcount, out=arrmean, casting='unsafe', subok=False)
-C:\Users\skros\Anaconda3\lib\site-packages\numpy\core\_methods.py:116: RuntimeWarning: invalid value encountered in double_scalars
-  ret = ret.dtype.type(ret / rcount)
-C:\Users\skros\Anaconda3\lib\site-packages\numpy\core\_methods.py:59: RuntimeWarning: Mean of empty slice.
-  warnings.warn("Mean of empty slice.", RuntimeWarning)
-C:\Users\skros\Anaconda3\lib\site-packages\numpy\core\_methods.py:68: RuntimeWarning: invalid value encountered in true_divide
-  ret, rcount, out=ret, casting='unsafe', subok=False)
-Done with step 1 out of  3
-Done with step 2 out of  3
-Done with step 3 out of  3
 ```
 
 ```python
->>> numbbeta = 5
+>>> #Check if the amount of data blocks were enough
+... steps_final = 800000
+>>> d = 2.0
+>>> s = 1.4
+>>> N = 400
+>>> equilibrium_steps = 40000
+>>> beta = 0.6
+>>> Energy_final = np.zeros(shape=(steps_final, ))
+>>> Energy_final = simulate_hydrogen_molecule(s, beta, steps_final, N)[0]
+...
+...
+>>> #Calculate final Energy using the error function
+... Energy_truncated = Energy_final[equilibrium_steps:, :]
+>>> varE_final = np.var(Energy_truncated)
+>>> hydrogen_mol_energy, hydrogen_mol_error = Error(Energy_truncated, error_blocks)
+...
+>>> # Plot to determine if the minimum block length
+... nt = steps_final - equilibrium_steps
+>>> std = []
+>>> nsteps = 100
+>>> x = []
+>>> for i in range(1,nt-1):
+...     a = i%nsteps
+...     if a == 0:
+...         std1=np.std(Energy_final[equilibrium_steps:i])
+...         std.append(std1)
+...         x.append(i)
+>>> plt.figure()
+>>> plt.plot(x[1:], std[1:])
+>>> plt.xlabel(r'block length')
+>>> plt.ylabel(r'$\sigma$')
+```
+
+```python
+>>> #Gather data for plot of energy dependent of beta
+... numbbeta = 5
 >>> steps = 800000
 >>> d = 2.0
 >>> beta_row = np.linspace(0.1, 1, 10)
@@ -487,7 +453,6 @@ Done with step 3 out of  3
 ...
 >>> for j in range(len(beta_row)):
 ...     beta = beta_row[j]
-...     Energy_final = np.zeros(shape=(steps, ))
 ...     Energy_final = simulate_hydrogen_molecule(s, beta, steps, N)[0]
 ...     #Calculate final Energy using the error function
 ...     Energy_truncated = Energy_final[equilibrium_steps:, :]
@@ -501,42 +466,36 @@ Done with step 3 out of  3
 ```
 
 ```python
->>> fig = plt.figure(figsize=(3,1.85))
+>>> fig = plt.figure(figsize=(3, 1.85))
 ...
->>> s_row = np.append(np.linspace(1, 2, 11), 1.4011)
->>> s_row_finer = np.linspace(0.15, 0.95, 9)
->>> loc_en_1 = np.load('20160408_energy_graph_data.npy')
->>> loc_en_2 = np.load('20160409_energy_graph_data.npy')
-...
->>> sort = s_row.argsort()
->>> x_axis = s_row[sort]
->>> y_axis = loc_en_1[:, 0][sort]
+>>> x_axis = s_row
+>>> y_axis = energy_graph_data[:, 0]
+>>> lit_values = np.array([[1.0, 1.2, 1.4, 1.6, 1.8, 2.0], [-1.1245397, -1.164935242, \
+...                                             -1.174475713, -1.16858337, -1.15506873, -1.138132955]])
 ...
 >>> ax2 = fig.add_subplot(111)
->>> s1_energy = ax2.plot(x_axis, y_axis, 'ok-', markersize = 3, label=r'VQMC method')
->>> dickerson = ax2.scatter(1.3989,-1.1645, s = 5, alpha=0.5, label = r'Experimental value')
+>>> s_energy = ax2.plot(x_axis, y_axis, 'ok-', markersize = 3, label = r'VQMC method')
+>>> lit = ax2.scatter(lit_values[0, :], lit_values[1, :], 'dk-', markersize = 3, label = r'Literature value')
 ...
->>> plt.xlabel(r'$s [r_b]$', fontsize=9)
->>> ylab = plt.ylabel(r'$\left\langle E \right\rangle [\mathrm{Hartree}]$', fontsize=9)
->>> legend = ax2.legend(loc='upper right', shadow=True, fontsize = 9)
+>>> plt.xlabel(r'$s~[r_b]$', fontsize=9)
+>>> ylab = plt.ylabel(r'$\left\langle E \right\rangle~[\mathrm{Hartree}]$', fontsize=9)
+>>> legend = ax2.legend(loc = 'upper right', shadow = True, fontsize = 9)
 >>> ax2.set_xlim([1, 2])
->>> ax2.set_ylim([-1.18, -1.05])
+>>> ax2.set_ylim([-1.20, -1.05])
 ```
 
-#### fig.savefig('s_closeup.pdf', bbox_inches='tight', pad_inches=0.1)
+```python
+>>> fig.savefig('s_graph.pdf', bbox_inches='tight', pad_inches=0.1)
+```
 
 ```python
 >>> fig = plt.figure(figsize=(3, 1.85))
 ...
->>> s_row = np.append(np.linspace(1, 2, 11), 1.4011)
->>> s_row_finer = np.linspace(0.15, 0.95, 9)
->>> beta_en_1 = np.load('20160408_beta_graph_data.npy')
-...
 >>> ax2 = fig.add_subplot(111)
->>> s1_energy = ax2.plot(beta_en_1[:, 2], beta_en_1[:, 0], 'ok-', markersize = 3, label=r'VQMC method')
+>>> beta_energy = ax2.plot(beta_graph_data[:, 2], beta_graph_data[:, 0], 'ok-', markersize = 3, label = r'VQMC method')
 ...
->>> plt.xlabel(r'$\beta$', fontsize=9)
->>> ylab = plt.ylabel(r'$\left\langle E \right\rangle [\mathrm{Hartree}]$', fontsize=9)
+>>> plt.xlabel(r'$\beta$', fontsize = 9)
+>>> ylab = plt.ylabel(r'$\left\langle E \right\rangle [\mathrm{Hartree}]$', fontsize = 9)
 >>> ax2.set_ylim([-1.18, -1.08])
 ```
 
