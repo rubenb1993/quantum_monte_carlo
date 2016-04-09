@@ -10,7 +10,6 @@
 >>> c = ipp.Client()
 >>> view = c[0:3]
 >>> print(c.ids)
-[0, 1, 2, 3]
 ```
 
 ```python
@@ -330,15 +329,4 @@ scrolled: true
 ...     np.save('beta_graph_data', beta_graph_data) #save for every value of beta to save intermediate results
 ...     print("Done with step ", j+1, "out of ", len(beta_row))
 ...     #print("mean with error function: ", mean_energy, "and error: ", std_error)
-Done with step  0 out of  10
-Done with step  1 out of  10
-Done with step  2 out of  10
-Done with step  3 out of  10
-Done with step  4 out of  10
-Done with step  5 out of  10
-Done with step  6 out of  10
-Done with step  7 out of  10
-Done with step  8 out of  10
-Done with step  9 out of  10
-Time elapsed:  7699.671926021576 s
 ```

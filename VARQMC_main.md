@@ -386,10 +386,8 @@
 ...         beta_old = beta
 ...         i += 1
 ...
-...
 ...     Energy_final = np.zeros(shape=(steps_final, ))
 ...     Energy_final = simulate_hydrogen_molecule(s, beta, steps_final, N)[0]
-...
 ...
 ...     #Calculate final Energy using the error function
 ...     Energy_truncated = Energy_final[equilibrium_steps:, :]
@@ -406,32 +404,20 @@
 
 ```python
 >>> #Check if the amount of data blocks were enough
-... steps_final = 800000
->>> d = 2.0
->>> s = 1.4
->>> N = 400
->>> equilibrium_steps = 40000
->>> beta = 0.6
->>> Energy_final = np.zeros(shape=(steps_final, ))
->>> Energy_final = simulate_hydrogen_molecule(s, beta, steps_final, N)[0]
 ...
-...
->>> #Calculate final Energy using the error function
-... Energy_truncated = Energy_final[equilibrium_steps:, :]
->>> varE_final = np.var(Energy_truncated)
->>> hydrogen_mol_energy, hydrogen_mol_error = Error(Energy_truncated, error_blocks)
-...
->>> # Plot to determine if the minimum block length
+... # Plot to determine if the minimum block length
 ... nt = steps_final - equilibrium_steps
 >>> std = []
 >>> nsteps = 100
 >>> x = []
+...
 >>> for i in range(1,nt-1):
 ...     a = i%nsteps
 ...     if a == 0:
 ...         std1=np.std(Energy_final[equilibrium_steps:i])
 ...         std.append(std1)
 ...         x.append(i)
+...
 >>> plt.figure()
 >>> plt.plot(x[1:], std[1:])
 >>> plt.xlabel(r'block length')
@@ -456,7 +442,6 @@
 ...     Energy_final = simulate_hydrogen_molecule(s, beta, steps, N)[0]
 ...     #Calculate final Energy using the error function
 ...     Energy_truncated = Energy_final[equilibrium_steps:, :]
-...     varE_final = np.var(Energy_truncated)
 ...     energy_beta_hydrogen, error_beta_hydrogen = Error(Energy_truncated, error_blocks)
 ...
 ...     beta_graph_data[j,0] = energy_beta_hydrogen
@@ -464,6 +449,8 @@
 ...     beta_graph_data[j,2] = beta
 ...     np.save('20160409_beta_graph_data', beta_graph_data) #save for every value of beta to save intermediate results
 ```
+
+### Plotting the data
 
 ```python
 >>> fig = plt.figure(figsize=(3, 1.85))
