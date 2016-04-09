@@ -19,8 +19,8 @@
 ...     determined by creating n blocks and calculating the standard deviation. """
 ...     # Divide the datavector in nblocks and calculate the average value for each block
 ...     datavector1 = datavector[0:len(datavector) - len(datavector)%nblocks, :]
-...     data_block = np.reshape(datavector1, (-1,N,nblocks))
-...     blockmean = np.mean(data_block, axis=(0,1))
+...     data_block = np.reshape(datavector1, (-1, N, nblocks))
+...     blockmean = np.mean(data_block, axis=(0, 1))
 ...     mean = np.mean(blockmean)
 ...     stderr = np.std(blockmean)/np.sqrt(nblocks)
 ...     return mean, stderr
@@ -56,9 +56,9 @@
 ...         x_new = x + (np.random.rand(len(x)) - 0.5)*d
 ...         p = (np.exp(-alpha*x_new*x_new) / np.exp(-alpha*x*x))**2 #calculate ratio of psi^2 for old and new
 ...         m = p > np.random.rand(len(x))
-...         x = apply_mask(x,m)
-...         Energy[j,:] = alpha + x*x *(0.5 - 2*(alpha*alpha))
-...         lnpsi[j,:] = -x*x #determine the logarithm of the wavefunction for energy minimalization
+...         x = x_new*m + x*~m
+...         Energy[j, :] = alpha + x*x *(0.5 - 2*(alpha*alpha))
+...         lnpsi[j, :] = -x*x #determine the logarithm of the wavefunction for energy minimalization
 ...     return Energy, lnpsi
 ```
 
@@ -75,8 +75,8 @@
 ...         p = (np.exp(-alpha*np.linalg.norm(x_new, axis=1)) / np.exp(-alpha*np.linalg.norm(x, axis=1)))**2
 ...         m = (p > np.random.rand(N)).reshape(-1, 1)
 ...         x = x_new*m + x*~m
-...         Energy[j,:] = -1/np.linalg.norm(x, axis=1) -alpha/2*(alpha - 2/np.linalg.norm(x, axis=1))
-...         lnpsi[j,:] = -np.linalg.norm(x) #determine the logarithm of the wave function to minimize energy
+...         Energy[j, :] = -1/np.linalg.norm(x, axis=1) -alpha/2*(alpha - 2/np.linalg.norm(x, axis=1))
+...         lnpsi[j, :] = -np.linalg.norm(x) #determine the logarithm of the wave function to minimize energy
 ...     return Energy, lnpsi
 ```
 
@@ -95,7 +95,7 @@
 ...     lnpsi = np.zeros(shape=(steps, N))
 ...     for j in range(steps):
 ...         X_new = X + (np.random.rand(2*N, 3) - 0.5) * d
-...         r_old = np.linalg.norm(X,axis=1)
+...         r_old = np.linalg.norm(X, axis=1)
 ...         r_new = np.linalg.norm(X_new,axis=1)
 ...         r12_old = np.linalg.norm(X[0:N, :] - X[N:, :],axis=1)
 ...         r12_new = np.linalg.norm(X_new[0:N, :] - X_new[N:, :],axis=1)
@@ -107,11 +107,11 @@
 ...         psi_new= np.exp(-2*r_new[0:N] - 2*r_new[N:]) * np.exp(r12_new/(2*psi_fact_new))
 ...
 ...         p = (psi_new/psi_old)**2
-...         m = p>np.random.rand(N)
+...         m = p > np.random.rand(N)
 ...         m = np.transpose(np.tile(m, (3, 2))) #make from m a 400,3 matrix by repeating m
 ...         X = X_new*(m) + X*~(m)
 ...
-...         r1r2_diff = X[0:N,:] - X[N:,:]
+...         r1r2_diff = X[0:N, :] - X[N:, :]
 ...         r1_length = np.tile(np.linalg.norm(X[0:N,:], axis=1),(3, 1)).T #200,3 length vector to normalize r1
 ...         r2_length = np.tile(np.linalg.norm(X[N:, :],axis=1),(3, 1)).T #200,3 length vector to normalize r2
 ...         r1r2_diff_hat = X[0:N, :]/r1_length - X[N:, :]/r2_length
@@ -139,7 +139,7 @@
 ...     Energy (steps, N) is the energy of each particle pair at timestep j.
 ...     lnpsi (steps,N) is a matrix used to determine the minimum energy.
 ...     """
-...     pos_walker = np.random.uniform(-2, 2, (N,3,2,2))
+...     pos_walker = np.random.uniform(-2, 2, (N, 3, 2, 2))
 ...     a = fsolve(f, 0.1)
 ...     Energy = np.zeros(shape=(steps, N))
 ...     lnpsi = np.zeros(shape=(steps, N))
@@ -205,9 +205,9 @@
 >>> alpha = 1.2 #starting guess for alpha
 >>> gamma = 0.8 #steepest descent parameter
 >>> N = 400
->>> steps = 4000
+>>> steps_minimizer = 4000
 >>> steps_final = 30000
->>> wastesteps = 4000
+>>> equilibrium_steps = 4000
 >>> d = 0.05 #movement size
 >>> i = 0
 >>> error_blocks = 5
@@ -218,7 +218,7 @@
 >>> #optimize alpha with a steepest descent method
 ... while abs(dalpha) > 5e-5 and i < numbalpha:
 ...     #Do VQMC step with old value for alpha
-...     Energy, lnpsi = simulate_harmonic_oscillator(alpha, steps, N)
+...     Energy, lnpsi = simulate_harmonic_oscillator(alpha, steps_minimizer, N)
 ...     meanEn = np.mean(Energy)
 ...     varE = np.var(Energy)
 ...     #print("alpha = ",alpha,", <E> = ", meanEn, "var(E) = ", varE)
@@ -234,12 +234,12 @@
 ...
 >>> #print("End result: alpha = ",alpha,", <E> = ", meanEn, 'var(E) = ', varE)
 ... #Determine the final energy with the optimized value for alpha
-... Energy_final = np.zeros(shape=(steps_final,))
+... Energy_final = np.zeros(shape=(steps_final, ))
 >>> Energy_final = simulate_harmonic_oscillator(alpha, steps_final, N)[0]
 ...
 >>> Energy_harmonic, error_harmonic = Error(Energy_final, error_blocks)
 >>> print("<E> = ", Energy_harmonic, "with error ", error_harmonic)
-<E> =  0.756195031545 with error  7.88867064184e-08
+<E> =  0.499999974537 with error  5.97277732256e-08
 ```
 
 ## Hydrogen Atom
@@ -281,10 +281,36 @@
 >>> #Determine the final energy with the approximated value of alpha
 ... Energy_final = np.zeros(shape=(steps_final, N))
 >>> Energy_final = simulate_hydrogen_atom(alpha, steps_final, N)[0]
->>> Energy_truncated = Energy_final[equilibrium_steps:,:]
+>>> Energy_truncated = Energy_final[equilibrium_steps:, :]
 >>> mean_hydrogen_atom, error_hydrogen_atom  = Error(Energy_truncated, error_blocks)
 ...
 >>> print("<E> = ", mean_hydrogen_atom, "with error: ", error_hydrogen_atom)
+End result: alpha =  0.993920883666 iteration # =  30
+<E> =  -0.499971516299 with error:  1.0929431945e-05
+```
+
+```python
+>>> # Plot to determine optimal block size for data blocking
+... nt = steps_final - equilibrium_steps
+>>> std = []
+>>> nsteps = 100
+>>> x = []
+>>> for i in range(nt-1):
+...     a=i%nsteps
+...     if a == 0:
+...         std1 = np.std(Energy_truncated[:i])
+...         std.append(std1)
+...         x.append(i)
+>>> plt.figure()
+>>> plt.plot(x[1:], std[1:])
+>>> plt.xlabel(r'block length')
+>>> plt.ylabel(r'error')
+C:\Users\skros\Anaconda3\lib\site-packages\numpy\core\_methods.py:82: RuntimeWarning: Degrees of freedom <= 0 for slice
+  warnings.warn("Degrees of freedom <= 0 for slice", RuntimeWarning)
+C:\Users\skros\Anaconda3\lib\site-packages\numpy\core\_methods.py:94: RuntimeWarning: invalid value encountered in true_divide
+  arrmean, rcount, out=arrmean, casting='unsafe', subok=False)
+C:\Users\skros\Anaconda3\lib\site-packages\numpy\core\_methods.py:116: RuntimeWarning: invalid value encountered in double_scalars
+  ret = ret.dtype.type(ret / rcount)
 ```
 
 ## Helium Atom
@@ -319,7 +345,7 @@
 ...     meanEtimeslnpsi = np.mean(lnpsi*Energy)
 ...     dEdalpha = 2*(meanEtimeslnpsi-meanEn*meanlnpsi)
 ...     alpha -=  gamma*dEdalpha
-...     dalpha = (alpha-alpha_old)/alpha_old
+...     dalpha = (alpha - alpha_old)/alpha_old
 ...     i += 1
 ...     alpha_old = alpha
 ...
@@ -327,7 +353,7 @@
 ...
 >>> #Determine the energy with the optimized value of alpha
 ... Energy_helium = np.zeros(shape=(steps_final, ))
->>> Energy_helium = simulate_helium_atom(alpha,steps_final, d, N)[0]
+>>> Energy_helium = simulate_helium_atom(alpha, steps_final, d, N)[0]
 >>> Energy_helium_truncated = Energy_helium[wastesteps:, :]
 >>> helium_energy, helium_error = Error(Energy_helium_truncated, error_blocks)
 >>> helium_variance = np.var(Energy_helium_truncated)
@@ -340,15 +366,55 @@ Final Energy at alpha( 0.449507948461 ) = -2.85893823217 , with error =  0.00070
 ## Hydrogen Molecule
 
 ```python
+>>> steps_final = 800000
+>>> d = 2.0
+>>> s = 1.4
+>>> N = 400
+>>> equilibrium_steps = 40000
+>>> Energy_final = np.zeros(shape=(steps_final, ))
+>>> Energy_final = simulate_hydrogen_molecule(s, beta, steps_final, N)[0]
+...
+...
+>>> #Calculate final Energy using the error function
+... Energy_truncated = Energy_final[equilibrium_steps:, :]
+>>> varE_final = np.var(Energy_truncated)
+>>> hydrogen_mol_energy, hydrogen_mol_error = Error(Energy_truncated, error_blocks)
+```
+
+```python
+>>> # Plot to determine optimal block size for data blocking
+... nt = steps_final - equilibrium_steps
+>>> std = []
+>>> nsteps = 100
+>>> x = []
+>>> for i in range(nt-1):
+...     a = i%nsteps
+...     if a == 0:
+...         std1=np.std(Energy_final[equilibrium_steps:i])
+...         std.append(std1)
+...         x.append(i)
+>>> plt.figure()
+>>> plt.plot(x[1:], std[1:])
+>>> plt.xlabel(r'block length')
+>>> plt.ylabel(r'error')
+C:\Users\skros\Anaconda3\lib\site-packages\numpy\core\_methods.py:82: RuntimeWarning: Degrees of freedom <= 0 for slice
+  warnings.warn("Degrees of freedom <= 0 for slice", RuntimeWarning)
+C:\Users\skros\Anaconda3\lib\site-packages\numpy\core\_methods.py:94: RuntimeWarning: invalid value encountered in true_divide
+  arrmean, rcount, out=arrmean, casting='unsafe', subok=False)
+C:\Users\skros\Anaconda3\lib\site-packages\numpy\core\_methods.py:116: RuntimeWarning: invalid value encountered in double_scalars
+  ret = ret.dtype.type(ret / rcount)
+```
+
+```python
 >>> numbbeta = 5
 >>> steps = 1000
 >>> gamma = 0.5
->>> steps_final = 8000
+>>> steps_final = 800000
 >>> d = 2.0
 >>> s_row = [1.4, 1.4011, 1.5]
 >>> error_blocks = 39
 >>> N = 400
->>> wastesteps = 20000
+>>> equilibrium_steps = 20000
 ...
 >>> energy_graph_data = np.zeros(shape=(len(s_row), 3))
 ...
@@ -361,10 +427,9 @@ Final Energy at alpha( 0.449507948461 ) = -2.85893823217 , with error =  0.00070
 ...     #Determine best beta with a steepest descent method
 ...     while abs(dbeta) > 5e-5 and i < numbbeta:
 ...         #Do VQMC step with old beta
-...         pos_walker = np.random.uniform(-2, 2, (N, 3, 2, 2))
 ...         Energy = np.zeros(shape=(steps,N))
 ...         lnpsi = np.zeros(shape=(steps,N))
-...         Energy, lnpsi = simulate_hydrogen_molecule_min(s_row[j], beta, steps, pos_walker,N)
+...         Energy, lnpsi = simulate_hydrogen_molecule(s_row[j], beta, steps, N)
 ...         varE = np.var(Energy)
 ...         meanEn = np.mean(Energy)
 ...
@@ -379,12 +444,11 @@ Final Energy at alpha( 0.449507948461 ) = -2.85893823217 , with error =  0.00070
 ...
 ...
 ...     Energy_final = np.zeros(shape=(steps_final, ))
-...     pos_walker = np.random.uniform(-2, 2,(N, 3, 2, 2))
-...     Energy_final = simulate_hydrogen_molecule_min(s, beta, steps_final, pos_walker, N)[0]
+...     Energy_final = simulate_hydrogen_molecule(s, beta, steps_final, N)[0]
 ...
 ...
 ...     #Calculate final Energy using the error function
-...     Energy_truncated = Energy_final[wastesteps:, :]
+...     Energy_truncated = Energy_final[equilibrium_steps:, :]
 ...     varE_final = np.var(Energy_truncated)
 ...     hydrogen_mol_energy, hydrogen_mol_error = Error(Energy_truncated, error_blocks)
 ...
@@ -394,35 +458,39 @@ Final Energy at alpha( 0.449507948461 ) = -2.85893823217 , with error =  0.00070
 ...     energy_graph_data[j,2] = beta
 ...     np.save('20160409_energy_long_corr_time_s_1_440115', energy_graph_data)
 ...     print("Done with step", j+1, "out of ",len(s_row))
-...     #print("mean with error function: ", mean_energy, "and error: ", std_error)
-...
->>> straks = time.time()
->>> print("Time elapsed: ", straks-nu, "s")
+C:\Users\skros\Anaconda3\lib\site-packages\numpy\core\_methods.py:82: RuntimeWarning: Degrees of freedom <= 0 for slice
+  warnings.warn("Degrees of freedom <= 0 for slice", RuntimeWarning)
+C:\Users\skros\Anaconda3\lib\site-packages\numpy\core\_methods.py:94: RuntimeWarning: invalid value encountered in true_divide
+  arrmean, rcount, out=arrmean, casting='unsafe', subok=False)
+C:\Users\skros\Anaconda3\lib\site-packages\numpy\core\_methods.py:116: RuntimeWarning: invalid value encountered in double_scalars
+  ret = ret.dtype.type(ret / rcount)
+C:\Users\skros\Anaconda3\lib\site-packages\numpy\core\_methods.py:59: RuntimeWarning: Mean of empty slice.
+  warnings.warn("Mean of empty slice.", RuntimeWarning)
+C:\Users\skros\Anaconda3\lib\site-packages\numpy\core\_methods.py:68: RuntimeWarning: invalid value encountered in true_divide
+  ret, rcount, out=ret, casting='unsafe', subok=False)
 Done with step 1 out of  3
 Done with step 2 out of  3
 Done with step 3 out of  3
-Time elapsed:  2478.7046654224396 s
 ```
 
 ```python
->>> numbbeta = 150
+>>> numbbeta = 5
 >>> steps = 800000
 >>> d = 2.0
 >>> beta_row = np.linspace(0.1, 1, 10)
 >>> s = 1.4011 #at approximate hydrogen molecule distance
->>> error_blocks = 10
+>>> error_blocks = 39
 >>> N = 400
->>> wastesteps = 7000
+>>> equilibrium_steps = 20000
 ...
 >>> beta_graph_data = np.zeros(shape=(len(beta_row), 3))
 ...
 >>> for j in range(len(beta_row)):
 ...     beta = beta_row[j]
 ...     Energy_final = np.zeros(shape=(steps, ))
-...     Energy_final = simulate_hydrogen_molecule_min(s, beta, steps, N)[0]
-...
+...     Energy_final = simulate_hydrogen_molecule(s, beta, steps, N)[0]
 ...     #Calculate final Energy using the error function
-...     Energy_truncated = Energy_final[wastesteps:, :]
+...     Energy_truncated = Energy_final[equilibrium_steps:, :]
 ...     varE_final = np.var(Energy_truncated)
 ...     energy_beta_hydrogen, error_beta_hydrogen = Error(Energy_truncated, error_blocks)
 ...
@@ -455,9 +523,7 @@ Time elapsed:  2478.7046654224396 s
 >>> ax2.set_ylim([-1.18, -1.05])
 ```
 
-```python
->>> fig.savefig('s_closeup.pdf', bbox_inches='tight', pad_inches=0.1)
-```
+#### fig.savefig('s_closeup.pdf', bbox_inches='tight', pad_inches=0.1)
 
 ```python
 >>> fig = plt.figure(figsize=(3, 1.85))
